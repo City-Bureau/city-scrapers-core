@@ -1,0 +1,54 @@
+import json
+from datetime import datetime, timedelta
+from operator import itemgetter
+from urllib.parse import urlparse
+
+from .diff import DiffMiddleware
+
+
+class S3DiffMiddleware(DiffMiddleware):
+    """S3 backend for comparing previously scraped JSCalendar outputs"""
+
+    def __init__(self, spider, settings):
+        import boto3
+
+        parsed = urlparse(settings.get("FEED_URI"))
+        self.spider = spider.name
+        self.feed_prefix = settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
+        self.bucket = parsed.netloc
+        self.client = boto3.client(
+            "s3",
+            aws_access_key_id=settings.get("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=settings.get("AWS_SECRET_ACCESS_KEY"),
+        )
+        super().__init__()
+
+    def load_previous_results(self):
+        max_days_previous = 3
+        days_previous = 0
+        while days_previous <= max_days_previous:
+            match_objects = self.client.list_objects(
+                Bucket=self.bucket,
+                Prefix=(datetime.now() - timedelta(days=days_previous)).strftime(
+                    self.feed_prefix
+                ),
+            )
+            spider_objects = [
+                obj
+                for obj in match_objects.get("Contents", [])
+                if self.spider in obj["Key"]
+            ]
+            if len(spider_objects) > 0:
+                break
+            days_previous += 1
+
+        if len(spider_objects) == 0:
+            return []
+        obj = sorted(spider_objects, key=itemgetter("Key"))[-1]
+        feed_text = (
+            self.client.get_object(Bucket=self.bucket, Key=obj["Key"])
+            .get("Body")
+            .read()
+            .decode("utf-8")
+        )
+        return [json.loads(line) for line in feed_text.split("\n") if line.strip()]

@@ -1,0 +1,13 @@
+language: python
+python:
+  - 3.5
+  - 3.6
+  - 3.7-dev
+install:
+  - pip install poetry
+  - poetry install
+script:
+  - poetry run isort --check-only --diff || exit 1
+  - poetry run black
+  - poetry run flake8
+  - poetry run pytest

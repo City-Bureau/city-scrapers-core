@@ -1,0 +1,70 @@
+[tool.poetry]
+name = "city-scrapers-core"
+version = "0.1.0"
+description = "Core functionality for City Scrapers projects"
+authors = ["Pat Sier <pat@citybureau.org>"]
+license = "MIT"
+readme = "README.md"
+
+homepage = "https://cityscrapers.org/"
+repository = "https://github.com/City-Bureau/city-scrapers-core"
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Framework :: Scrapy"
+]
+
+[tool.poetry.dependencies]
+python = "^3.5"
+scrapy = "^1.5"
+jsonschema = ">=3.0.0a5"
+pytz = "^2018.9"
+requests = "^2.21"
+legistar = { git = "https://github.com/opencivicdata/python-legistar-scraper", branch = "master" }
+boto3 = { version = ">=1.9", optional = true }
+"azure-storage-blob" = { version = ">=1.4", optional = true }
+
+[tool.poetry.dev-dependencies]
+pytest = "^4.1"
+black = { version = "^18.3-alpha.0", python = "^3.6" }
+flake8 = "^3.6"
+isort = { git = "https://github.com/timothycrosley/isort", branch = "develop", extras = ["pyproject"] }
+
+[tool.poetry.extras]
+aws = ["boto3"]
+azure = ["azure-storage-blob"]
+
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.pytest_cache
+  | \.tox
+  | \.venv
+  | \.vscode
+  | __pycache__
+  | build
+  | coverage
+  | dist
+)/
+'''
+
+[tool.isort]
+skip_glob = "*/.venv/*"
+sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+multi_line_output = 3
+line_length = 88
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+
+]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
