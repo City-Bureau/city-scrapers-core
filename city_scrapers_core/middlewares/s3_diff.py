@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from operator import itemgetter
 from urllib.parse import urlparse
 
+from pytz import timezone
+
 from .diff import DiffMiddleware
 
 
@@ -13,7 +15,7 @@ class S3DiffMiddleware(DiffMiddleware):
         import boto3
 
         parsed = urlparse(settings.get("FEED_URI"))
-        self.spider = spider.name
+        self.spider = spider
         self.feed_prefix = settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
         self.bucket = parsed.netloc
         self.client = boto3.client(
@@ -26,17 +28,19 @@ class S3DiffMiddleware(DiffMiddleware):
     def load_previous_results(self):
         max_days_previous = 3
         days_previous = 0
+        tz = timezone(self.spider.timezone)
         while days_previous <= max_days_previous:
             match_objects = self.client.list_objects(
                 Bucket=self.bucket,
-                Prefix=(datetime.now() - timedelta(days=days_previous)).strftime(
-                    self.feed_prefix
-                ),
+                Prefix=(
+                    tz.localize(datetime.now()) - timedelta(days=days_previous)
+                ).strftime(self.feed_prefix),
+                MaxKeys=1000,
             )
             spider_objects = [
                 obj
                 for obj in match_objects.get("Contents", [])
-                if self.spider in obj["Key"]
+                if self.spider.name in obj["Key"]
             ]
             if len(spider_objects) > 0:
                 break

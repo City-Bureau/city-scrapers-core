@@ -2,6 +2,8 @@ import json
 from datetime import datetime, timedelta
 from operator import attrgetter
 
+from pytz import timezone
+
 from .diff import DiffMiddleware
 
 
@@ -11,7 +13,7 @@ class AzureDiffMiddleware(DiffMiddleware):
     def __init__(self, spider, settings):
         from azure.storage.blob import BlockBlobService
 
-        self.spider = spider.name
+        self.spider = spider
         feed_uri = settings.get("FEED_URI")
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         self.blob_service = BlockBlobService(
@@ -24,14 +26,17 @@ class AzureDiffMiddleware(DiffMiddleware):
     def load_previous_results(self):
         max_days_previous = 3
         days_previous = 0
+        tz = timezone(self.spider.timezone)
         while days_previous <= max_days_previous:
             matching_blobs = self.blob_service.list_blobs(
                 self.container,
-                prefix=(datetime.now() - timedelta(days=days_previous)).strftime(
-                    self.feed_prefix
-                ),
+                prefix=(
+                    tz.localize(datetime.now()) - timedelta(days=days_previous)
+                ).strftime(self.feed_prefix),
             )
-            spider_blobs = [blob for blob in matching_blobs if self.spider in blob.name]
+            spider_blobs = [
+                blob for blob in matching_blobs if self.spider.name in blob.name
+            ]
             if len(spider_blobs) > 0:
                 break
             days_previous += 1
