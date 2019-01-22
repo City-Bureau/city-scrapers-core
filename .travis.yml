@@ -9,6 +9,6 @@ install:
   - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; then pip install black; fi
 script:
   - isort --check-only --diff || exit 1
-  - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; then black --check; fi
+  - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; then black ./city_scrapers_core ./tests --check; fi
   - flake8
   - pytest

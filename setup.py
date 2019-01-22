@@ -6,7 +6,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="city-scrapers-core",
-    version="0.1.3",
+    version="0.1.4",
     license="MIT",
     author="Pat Sier",
     author_email="pat@citybureau.org",
@@ -16,13 +16,7 @@ setup(
     url="https://github.com/City-Bureau/city-scrapers-core",
     packages=find_packages(),
     package_data={"": ["*"], "city_scrapers_core": ["templates/*"]},
-    install_requires=[
-        "jsonschema>=3.0.0a5",
-        "legistar",
-        "pytz",
-        "requests",
-        "scrapy",
-    ],
+    install_requires=["jsonschema>=3.0.0a5", "legistar", "pytz", "requests", "scrapy"],
     tests_requires=["flake8", "pytest", "isort"],
     extras_requires={"aws": ["boto3"], "azure": ["azure-storage-blob"]},
     dependency_links=[
