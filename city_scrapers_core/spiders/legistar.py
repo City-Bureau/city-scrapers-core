@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import urllib3
 from legistar.events import LegistarEventsScraper
 
 from .spider import CityScrapersSpider
@@ -16,7 +15,6 @@ class LegistarSpider(CityScrapersSpider):
         return self.parse_legistar(events)
 
     def _call_legistar(self, since=None):
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         les = LegistarEventsScraper()
         les.BASE_URL = self.base_url
         les.EVENTSPAGE = "{}/Calendar.aspx".format(self.base_url)
