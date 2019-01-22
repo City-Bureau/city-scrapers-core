@@ -8,6 +8,6 @@ install:
   - poetry install
 script:
   - poetry run isort --check-only --diff || exit 1
-  - poetry run black
+  - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; then poetry run black --check; fi
   - poetry run flake8
   - poetry run pytest

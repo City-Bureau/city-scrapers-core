@@ -72,7 +72,9 @@ class Command(ScrapyCommand):
         diff_command = "git diff --name-only --diff-filter=AM $TRAVIS_COMMIT_RANGE"
         diff_output = subprocess.check_output(diff_command.split()).decode("utf-8")
         for filename in diff_output.split("\n"):
-            spider = re.search("(?<={}/)\w+(?=\.py)".format(self.spiders_dir), filename)
+            spider = re.search(  # noqa
+                "(?<={}/)\w+(?=\.py)".format(self.spiders_dir), filename
+            )
             if spider:
                 changed_spiders.append(spider.group())
         return changed_spiders
