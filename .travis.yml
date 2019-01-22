@@ -4,9 +4,9 @@ python:
   - 3.6
   - 3.7-dev
 install:
-  - python setup.py install
-  - pip install flake8 pytest isort
-  - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; pip install black==18.3-alpha.0; fi
+  - pip install -r requirements.txt
+  - python setup.py develop
+  - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; then pip install black; fi
 script:
   - isort --check-only --diff || exit 1
   - if [ $TRAVIS_PYTHON_VERSION != "3.5" ]; then black --check; fi

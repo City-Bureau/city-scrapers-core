@@ -1,0 +1,9 @@
+https://github.com/opencivicdata/python-legistar-scraper/zipball/bf25cc94980f1608b4cc6766529f1155a273e049#egg=legistar
+jsonschema>=3.0.0a5
+legistar
+pytz
+requests
+scrapy
+flake8
+pytest
+isort
