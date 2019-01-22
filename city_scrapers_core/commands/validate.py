@@ -69,8 +69,15 @@ class Command(ScrapyCommand):
         if not travis_pr or travis_pr == "false":
             print("Travis CI build not triggered by a pull request")
             return changed_spiders
-        diff_command = "git diff --name-only --diff-filter=AM $TRAVIS_COMMIT_RANGE"
-        diff_output = subprocess.check_output(diff_command.split()).decode("utf-8")
+        diff_output = subprocess.check_output(
+            [
+                "git",
+                "diff",
+                "--name-only",
+                "--diff-filter=AM",
+                os.getenv("TRAVIS_COMMIT_RANGE"),
+            ]
+        ).decode("utf-8")
         for filename in diff_output.split("\n"):
             spider = re.search(  # noqa
                 "(?<={}/)\w+(?=\.py)".format(self.spiders_dir), filename

@@ -6,7 +6,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="city-scrapers-core",
-    version="0.1.6",
+    version="0.1.7",
     license="MIT",
     author="Pat Sier",
     author_email="pat@citybureau.org",
