@@ -7,6 +7,8 @@ Core functionality for creating public meetings web scrapers for the [City Scrap
 ## Installation
 
 ```bash
+# Requires installing legistar separately
+pip install https://github.com/opencivicdata/python-legistar-scraper/tarball/master#egg=legistar
 # To install base package
 pip install city-scrapers-core
 # To install with AWS or Azure dependencies
