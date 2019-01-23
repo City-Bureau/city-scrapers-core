@@ -1,10 +1,17 @@
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock
 
-import pytest  # noqa
+import pytest
+from scrapy.exceptions import DropItem
 
+from city_scrapers_core.constants import CANCELLED
 from city_scrapers_core.decorators import ignore_jscalendar
 from city_scrapers_core.items import Meeting
-from city_scrapers_core.pipelines import JSCalendarPipeline, MeetingPipeline
+from city_scrapers_core.pipelines import (
+    DiffPipeline,
+    JSCalendarPipeline,
+    MeetingPipeline,
+)
 from city_scrapers_core.spiders import CityScrapersSpider
 
 
@@ -53,3 +60,42 @@ def test_jscalendar_pipeline_duration():
     end_2 = start + timedelta(hours=3, minutes=5, seconds=20)
     assert pipeline.create_duration(Meeting(start=start, end=end_1)) == "P1DT2H3M"
     assert pipeline.create_duration(Meeting(start=start, end=end_2)) == "PT3H5M"
+
+
+def test_diff_merges_uids():
+    spider_mock = MagicMock()
+    spider_mock._previous_map = {"1": "TEST", "2": "TEST"}
+    pipeline = DiffPipeline()
+    pipeline.previous_map = {"1": "TEST", "2": "TEST"}
+    items = [{"id": "1"}, Meeting(id="2"), {"id": "3"}, Meeting(id="4")]
+    results = [pipeline.process_item(item, spider_mock) for item in items]
+    assert all("uid" in r for r in results[:2]) and all(
+        "uid" not in r for r in results[2:]
+    )
+
+
+def test_diff_ignores_previous_items():
+    now = datetime.now()
+    pipeline = DiffPipeline()
+    spider_mock = MagicMock()
+    previous = {
+        "cityscrapers.org/id": "1",
+        "start": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    spider_mock._previous_results = [previous]
+    with pytest.raises(DropItem):
+        pipeline.process_item(previous, spider_mock)
+
+
+def test_diff_cancels_upcoming_previous_items():
+    now = datetime.now()
+    pipeline = DiffPipeline()
+    spider_mock = MagicMock()
+    previous = {
+        "cityscrapers.org/id": "1",
+        "start": (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    spider_mock.previous_results = [previous]
+    result = pipeline.process_item(previous, spider_mock)
+    assert result["cityscrapers.org/id"] == "1"
+    assert result["status"] == CANCELLED

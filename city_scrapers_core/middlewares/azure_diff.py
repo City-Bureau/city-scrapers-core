@@ -10,18 +10,20 @@ from .diff import DiffMiddleware
 class AzureDiffMiddleware(DiffMiddleware):
     """Azure Blob Storage backend for comparing previously scraped JSCalendar outputs"""
 
-    def __init__(self, spider, settings):
+    def __init__(self, crawler):
         from azure.storage.blob import BlockBlobService
 
-        self.spider = spider
-        feed_uri = settings.get("FEED_URI")
+        feed_uri = crawler.settings.get("FEED_URI")
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
+        self.spider = crawler.spider
         self.blob_service = BlockBlobService(
             account_name=account_name, account_key=account_key
         )
         self.container = feed_uri.split("@")[1].split("/")[0]
-        self.feed_prefix = settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
-        super().__init__()
+        self.feed_prefix = crawler.settings.get(
+            "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
+        )
+        super().__init__(crawler)
 
     def load_previous_results(self):
         max_days_previous = 3

@@ -23,7 +23,7 @@ class JSCalendarPipeline:
             "start": item["start"].isoformat()[:19],
             "timeZone": spider.timezone,
             "duration": self.create_duration(item),
-            "locations": {"location": item["location"]},
+            "locations": self.create_locations(item),
             "links": self.create_links(item),
             "cityscrapers.org/id": item["id"],
             "cityscrapers.org/timeNotes": item["time_notes"],
@@ -39,6 +39,13 @@ class JSCalendarPipeline:
             "title": "Source",
         }
         return link_map
+
+    def create_locations(self, item):
+        """Create locations dict for JSCalendar"""
+        loc_dict = item["location"]
+        if "address" in loc_dict:
+            loc_dict["cityscrapers.org/address"] = loc_dict.pop("address", None)
+        return {"location": loc_dict}
 
     def create_duration(self, item):
         """Create ISO 8601 duration string from start and end datetimes"""

@@ -11,19 +11,21 @@ from .diff import DiffMiddleware
 class S3DiffMiddleware(DiffMiddleware):
     """S3 backend for comparing previously scraped JSCalendar outputs"""
 
-    def __init__(self, spider, settings):
+    def __init__(self, crawler):
         import boto3
 
-        parsed = urlparse(settings.get("FEED_URI"))
-        self.spider = spider
-        self.feed_prefix = settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
+        parsed = urlparse(crawler.settings.get("FEED_URI"))
+        self.spider = crawler.spider
+        self.feed_prefix = crawler.settings.get(
+            "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
+        )
         self.bucket = parsed.netloc
         self.client = boto3.client(
             "s3",
-            aws_access_key_id=settings.get("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=settings.get("AWS_SECRET_ACCESS_KEY"),
+            aws_access_key_id=crawler.settings.get("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=crawler.settings.get("AWS_SECRET_ACCESS_KEY"),
         )
-        super().__init__()
+        super().__init__(crawler)
 
     def load_previous_results(self):
         max_days_previous = 3

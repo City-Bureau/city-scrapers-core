@@ -1,55 +1,56 @@
-from datetime import datetime
+from scrapy import signals
+from scrapy.exceptions import DontCloseSpider
+from scrapy.http import Response
 
-from city_scrapers_core.constants import CANCELLED
 from city_scrapers_core.items import Meeting
 
 
 class DiffMiddleware:
     """
-    Class for comparing previous feed export results in JSCalendar format and either
-    merging UIDs for consistency or marking upcoming meetings that no longer appear as
-    cancelled.
+    Class for loading previously scraped results into currently scraped results for
+    comparison in DiffPipeline.
 
     Provider-specific backends can be created by subclassing and implementing the
     `load_previous_results` method.
     """
 
-    def __init__(self, *args, **kwargs):
-        self.previous_results = self.load_previous_results()
-        self.previous_map = {
-            result["cityscrapers.org/id"]: result["uid"]
-            for result in self.previous_results
-        }
+    def __init__(self, crawler):
+        self.crawler = crawler
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.spider, crawler.settings)
+        middleware = cls(crawler)
+        crawler.spider._previous_results = middleware.load_previous_results()
+        crawler.spider._previous_map = {
+            result["cityscrapers.org/id"]: result["uid"]
+            for result in crawler.spider._previous_results
+        }
+        crawler.spider._previous_ids = set()
+        crawler.spider._current_ids = set()
+        crawler.signals.connect(middleware.spider_idle, signal=signals.spider_idle)
+        return middleware
 
     def process_spider_output(self, response, result, spider):
         """
-        Merge the UIDs of previously scraped meetings and cancel any upcoming meetings
-        that no longer appear in results
+        Add previous meetings to the iterable of results for processing in DiffPipeline
         """
-        scraped_ids = set()
-        # Merge the previous UID into the item if it's already been scraped before
         for item in result:
             if isinstance(item, Meeting) or isinstance(item, dict):
-                scraped_ids.add(item["id"])
-                if item["id"] in self.previous_map:
-                    # Bypass __setitem__ call on Meeting to add uid
-                    if isinstance(item, Meeting):
-                        item._values["uid"] = self.previous_map[item["id"]]
-                    else:
-                        item["uid"] = self.previous_map[item["id"]]
+                spider._current_ids.add(item["id"])
             yield item
-        now_iso = datetime.now().isoformat()[:19]
-        for item in self.previous_results:
-            # Ignore items that are already included or are in the past
-            if item["cityscrapers.org/id"] in scraped_ids or item["start"] < now_iso:
-                continue
-            # If the item is upcoming and outside the prior criteria, mark it cancelled
-            scraped_ids.add(item["cityscrapers.org/id"])
-            yield {**item, "status": CANCELLED}
+
+    def spider_idle(self, spider):
+        """Add _previous_results to spider queue when current results finish"""
+        scraper = self.crawler.engine.scraper
+        self.crawler.signals.disconnect(self.spider_idle, signal=signals.spider_idle)
+        for item in spider._previous_results:
+            if not (
+                item["cityscrapers.org/id"] in spider._previous_ids
+                or item["cityscrapers.org/id"] in spider._current_ids
+            ):
+                spider._previous_ids.add(item["cityscrapers.org/id"])
+                scraper._process_spidermw_output(item, None, Response(""), spider)
+        raise DontCloseSpider
 
     def load_previous_results(self):
         """Return a list of dictionaries loaded from a previous feed export"""
