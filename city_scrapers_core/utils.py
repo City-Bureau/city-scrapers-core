@@ -1,5 +1,3 @@
-import os
-
 from scrapy.http import HtmlResponse, Request, TextResponse
 
 
@@ -17,7 +15,8 @@ def file_response(file_name, url=None):
         url = "http://www.example.com"
 
     request = Request(url=url)
-    file_content = read_test_file_content(file_name)
+    with open(file_name, "r") as f:
+        file_content = f.read()
 
     if file_name[-5:] == ".json":
         body = file_content
@@ -25,13 +24,3 @@ def file_response(file_name, url=None):
 
     body = str.encode(file_content)
     return HtmlResponse(url=url, request=request, body=body)
-
-
-def read_test_file_content(file_name):
-    if not file_name[0] == "/":
-        tests_dir = os.path.dirname(os.path.realpath(__file__))
-        file_path = os.path.join(tests_dir, file_name)
-    else:
-        file_path = file_name
-
-    return open(file_path, "r").read()

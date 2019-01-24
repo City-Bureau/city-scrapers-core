@@ -13,6 +13,12 @@ class $classname(LegistarSpider):
     link_types = []
 
     def parse_legistar(self, events):
+        """
+        `parse_legistar` should always `yield` Meeting items.
+
+        Change the `_parse_id`, `_parse_name`, etc methods to fit your scraping
+        needs.
+        """
         for event, _ in events:
             meeting = Meeting(
                 title=event["Name"]["label"],
@@ -43,6 +49,10 @@ class $classname(LegistarSpider):
     def _parse_end(self, item):
         """Parse end datetime as a naive datetime object. Added by pipeline if None"""
         return None
+
+    def _parse_time_notes(self, item):
+        """Parse any additional notes on the timing of the meeting"""
+        return ""
 
     def _parse_all_day(self, item):
         """Parse or generate all-day status. Defaults to False."""

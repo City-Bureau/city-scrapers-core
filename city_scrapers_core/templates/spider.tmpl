@@ -12,7 +12,7 @@ class $classname(CityScrapersSpider):
 
     def parse(self, response):
         """
-        `parse` should always `yield` a Meeting item.
+        `parse` should always `yield` Meeting items.
 
         Change the `_parse_id`, `_parse_name`, etc methods to fit your scraping
         needs.
@@ -55,6 +55,10 @@ class $classname(CityScrapersSpider):
     def _parse_end(self, item):
         """Parse end datetime as a naive datetime object. Added by pipeline if None"""
         return None
+
+    def _parse_time_notes(self, item):
+        """Parse any additional notes on the timing of the meeting"""
+        return ""
 
     def _parse_all_day(self, item):
         """Parse or generate all-day status. Defaults to False."""

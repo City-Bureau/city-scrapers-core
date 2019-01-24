@@ -1,3 +1,1 @@
-__version__ = "0.1.9"
-
-from .spiders import CityScrapersSpider, LegistarSpider  # noqa
+__version__ = "0.1.10"

@@ -42,7 +42,7 @@ class Command(ScrapyCommand):
             fixture_file = self._gen_fixtures(name, start_url)
         classname = "{}Spider".format(string.capwords(name, sep="_").replace("_", ""))
         self._genspider(name, agency, classname, domain, start_url, spider_template)
-        self._gen_tests(name, classname, fixture_file, test_template)
+        self._gen_tests(name, classname, start_url, fixture_file, test_template)
 
     def _genspider(self, name, agency, classname, domain, start_url, template_file):
         """Create spider from custom template"""
@@ -60,7 +60,7 @@ class Command(ScrapyCommand):
         render_templatefile(spider_file, **template_dict)
         print("Created file: {}".format(spider_file))
 
-    def _gen_tests(self, name, classname, fixture_file, template_file):
+    def _gen_tests(self, name, classname, start_url, fixture_file, template_file):
         """Creates tests from test template file"""
         template_dict = {
             "name": name,
@@ -68,6 +68,8 @@ class Command(ScrapyCommand):
             "fixture_file": fixture_file,
             "date_str": datetime.now().strftime("%Y-%m-%d"),
         }
+        if "legistar" not in name:
+            template_dict["start_url"] = start_url
         test_file = join(self.tests_dir, "test_{}.py".format(name))
         shutil.copyfile(join(self.templates_dir, template_file), test_file)
         render_templatefile(test_file, **template_dict)

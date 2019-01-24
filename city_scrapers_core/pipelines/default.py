@@ -11,7 +11,7 @@ class DefaultValuesPipeline:
         item.setdefault("all_day", False)
         item.setdefault("location", {})
         item.setdefault("links", [])
-        item.setdefaults("time_notes", "")
-        item.setdefaults("classification", NOT_CLASSIFIED)
-        item.setdefaults("status", TENTATIVE)
+        item.setdefault("time_notes", "")
+        item.setdefault("classification", NOT_CLASSIFIED)
+        item.setdefault("status", TENTATIVE)
         return item
