@@ -5,10 +5,10 @@ from urllib.parse import urlparse
 
 from pytz import timezone
 
-from .diff import DiffMiddleware
+from .diff import DiffPipeline
 
 
-class S3DiffMiddleware(DiffMiddleware):
+class S3DiffPipeline(DiffPipeline):
     """S3 backend for comparing previously scraped JSCalendar outputs"""
 
     def __init__(self, crawler):

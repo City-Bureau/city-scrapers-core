@@ -4,10 +4,10 @@ from operator import attrgetter
 
 from pytz import timezone
 
-from .diff import DiffMiddleware
+from .diff import DiffPipeline
 
 
-class AzureDiffMiddleware(DiffMiddleware):
+class AzureDiffPipeline(DiffPipeline):
     """Azure Blob Storage backend for comparing previously scraped JSCalendar outputs"""
 
     def __init__(self, crawler):

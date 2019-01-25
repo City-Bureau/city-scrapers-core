@@ -35,6 +35,11 @@ def test_meeting_pipeline_sets_end():
         Meeting(title="Test", start=datetime.now()), CityScrapersSpider(name="test")
     )
     assert meeting["end"] > meeting["start"]
+    now = datetime.now()
+    meeting = pipeline.process_item(
+        Meeting(title="Test", start=now, end=now), CityScrapersSpider(name="test")
+    )
+    assert meeting["end"] > meeting["start"]
 
 
 def test_jscalendar_pipeline_links():
@@ -65,7 +70,7 @@ def test_jscalendar_pipeline_duration():
 def test_diff_merges_uids():
     spider_mock = MagicMock()
     spider_mock._previous_map = {"1": "TEST", "2": "TEST"}
-    pipeline = DiffPipeline()
+    pipeline = DiffPipeline(None)
     pipeline.previous_map = {"1": "TEST", "2": "TEST"}
     items = [{"id": "1"}, Meeting(id="2"), {"id": "3"}, Meeting(id="4")]
     results = [pipeline.process_item(item, spider_mock) for item in items]
@@ -76,7 +81,7 @@ def test_diff_merges_uids():
 
 def test_diff_ignores_previous_items():
     now = datetime.now()
-    pipeline = DiffPipeline()
+    pipeline = DiffPipeline(None)
     spider_mock = MagicMock()
     previous = {
         "cityscrapers.org/id": "1",
@@ -89,7 +94,7 @@ def test_diff_ignores_previous_items():
 
 def test_diff_cancels_upcoming_previous_items():
     now = datetime.now()
-    pipeline = DiffPipeline()
+    pipeline = DiffPipeline(None)
     spider_mock = MagicMock()
     previous = {
         "cityscrapers.org/id": "1",

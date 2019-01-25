@@ -1,12 +1,14 @@
 from setuptools import find_packages, setup
 
+from city_scrapers_core import __version__
+
 with open("README.md", "r") as f:
     long_description = f.read()
 
 
 setup(
     name="city-scrapers-core",
-    version="0.1.10",
+    version=__version__,
     license="MIT",
     author="Pat Sier",
     author_email="pat@citybureau.org",
