@@ -11,7 +11,7 @@ from city_scrapers.spiders.$name import $classname
 freezer = freeze_time("$date_str")
 freezer.start()
 
-with open(join(dirname(__file__), "files", "$fixture_file"), "r") as f:
+with open(join(dirname(__file__), "files", "$fixture_file"), "r", encoding="utf-8") as f:
     test_response = json.load(f)
 
 spider = $classname()

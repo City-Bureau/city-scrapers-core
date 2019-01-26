@@ -15,7 +15,7 @@ def file_response(file_name, url=None):
         url = "http://www.example.com"
 
     request = Request(url=url)
-    with open(file_name, "r") as f:
+    with open(file_name, "r", encoding="utf-8") as f:
         file_content = f.read()
 
     if file_name[-5:] == ".json":
