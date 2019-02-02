@@ -1,7 +1,0 @@
-[flake8]
-exclude =
-    .git,
-    */__pycache__/*,
-    */migrations/*,
-    documenters/settings/*
-max-line-length = 88
