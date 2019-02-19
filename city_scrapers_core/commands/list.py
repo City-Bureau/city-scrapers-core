@@ -5,4 +5,11 @@ class Command(ExistingListCommand):
     def run(self, args, opts):
         for s in sorted(self.crawler_process.spider_loader.list()):
             cls = self.crawler_process.spider_loader.load(s)
-            print("{0: <6} |  {1}".format(s, getattr(cls, "agency", cls.agency_name)))
+            print(
+                "{0: <6} |  {1}".format(
+                    s,
+                    getattr(
+                        cls, "agency", getattr(cls, "agency_name", "Agency unavailable")
+                    ),
+                )
+            )
