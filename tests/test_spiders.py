@@ -12,7 +12,7 @@ def spider():
 
 
 def test_spider_clean_title(spider):
-    assert spider._clean_title("  Test 12 : Canceledd ") == "Test 12"
+    assert spider._clean_title("  Test 12 : Canceled ") == "Test 12"
 
 
 def test_spider_get_id(spider):

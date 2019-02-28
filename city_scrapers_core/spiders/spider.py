@@ -13,12 +13,12 @@ class CityScrapersSpider(Spider):
         # Add parameters for feed storage in spider local time
         if not hasattr(self, "timezone"):
             self.timezone = "America/Chicago"
-        tz = timezone(self.timezone)
-        now = tz.localize(datetime.now())
-        self.year = now.year
-        self.month = now.strftime("%m")
-        self.day = now.strftime("%d")
-        self.hour_min = now.strftime("%H%M")
+        self.tz = timezone(self.timezone)
+        self.now = self.tz.localize(datetime.now())
+        self.year = self.now.year
+        self.month = self.now.strftime("%m")
+        self.day = self.now.strftime("%d")
+        self.hour_min = self.now.strftime("%H%M")
 
     def _clean_title(self, title):
         """Remove cancelled strings from title"""
@@ -48,8 +48,9 @@ class CityScrapersSpider(Spider):
         meeting_text = " ".join(
             [item.get("title", ""), item.get("description", ""), text]
         ).lower()
+        start_with_tz = self.tz.localize(item["start"])
         if any(word in meeting_text for word in ["cancel", "rescheduled", "postpone"]):
             return CANCELLED
-        if item["start"] < datetime.now():
+        if start_with_tz < self.now:
             return PASSED
         return TENTATIVE
