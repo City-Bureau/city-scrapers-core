@@ -22,12 +22,14 @@ class CityScrapersSpider(Spider):
 
     def _clean_title(self, title):
         """Remove cancelled strings from title"""
-        return re.sub(
+        clean_title = re.sub(
             r"([\s:-]{1,3})?(cancel\w+|rescheduled)([\s:-]{1,3})?",
             "",
             title,
             flags=re.IGNORECASE,
         ).strip()
+        # Remove leading and trailing pipes, dashes, and colons
+        return re.sub(r"(^[|\-:]\s+|\s*[|\-:]$)", "", clean_title).strip()
 
     def _get_id(self, item, identifier=None):
         """Create an ID based off of the meeting details, title and any identifiers"""
