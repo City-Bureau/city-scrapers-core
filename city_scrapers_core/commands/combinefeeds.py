@@ -139,7 +139,7 @@ class Command(ScrapyCommand):
         """Get a list of the most recent scraper results for each spider"""
         spider_paths = []
         for spider in self.crawler_process.spider_loader.list():
-            all_spider_paths = [p for p in path_list if spider in p]
+            all_spider_paths = [p for p in path_list if "{}.".format(spider) in p]
             if len(all_spider_paths) > 0:
                 spider_paths.append(sorted(all_spider_paths)[-1])
         return spider_paths
