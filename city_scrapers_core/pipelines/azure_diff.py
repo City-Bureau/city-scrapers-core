@@ -37,7 +37,9 @@ class AzureDiffPipeline(DiffPipeline):
                 ).strftime(self.feed_prefix),
             )
             spider_blobs = [
-                blob for blob in matching_blobs if self.spider.name in blob.name
+                blob
+                for blob in matching_blobs
+                if "{}.".format(self.spider.name) in blob.name
             ]
             if len(spider_blobs) > 0:
                 break

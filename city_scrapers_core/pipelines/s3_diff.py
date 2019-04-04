@@ -42,7 +42,7 @@ class S3DiffPipeline(DiffPipeline):
             spider_objects = [
                 obj
                 for obj in match_objects.get("Contents", [])
-                if self.spider.name in obj["Key"]
+                if "{}.".format(self.spider.name) in obj["Key"]
             ]
             if len(spider_objects) > 0:
                 break
