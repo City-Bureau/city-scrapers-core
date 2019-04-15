@@ -26,9 +26,12 @@ class LegistarSpider(CityScrapersSpider):
         start_date = item.get("Meeting Date")
         start_time = item.get("Meeting Time")
         if start_date and start_time:
-            return datetime.strptime(
-                "{} {}".format(start_date, start_time), "%m/%d/%Y %I:%M %p"
-            )
+            try:
+                return datetime.strptime(
+                    "{} {}".format(start_date, start_time), "%m/%d/%Y %I:%M %p"
+                )
+            except ValueError:
+                return datetime.strptime(start_date, "%m/%d/%Y")
 
     def legistar_links(self, item):
         links = []
@@ -38,7 +41,12 @@ class LegistarSpider(CityScrapersSpider):
         return links
 
     def legistar_source(self, item):
-        return item.get("Name", {}).get("url", "{}/Calendar.aspx".format(self.base_url))
+        default_url = "{}/Calendar.aspx".format(self.base_url)
+        if isinstance(item.get("Name"), dict):
+            return item["Name"].get("url", default_url)
+        if isinstance(item.get("Meeting Details"), dict):
+            return item["Meeting Details"].get("url", default_url)
+        return default_url
 
     @property
     def base_url(self):

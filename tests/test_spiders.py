@@ -53,3 +53,29 @@ def test_legistar_spider_links():
         {"href": "https://example.com", "title": "Agenda"},
         {"href": "https://example.org", "title": "Fixture"},
     ]
+
+
+def test_legistar_start():
+    spider = LegistarSpider(name="city_scrapers")
+    assert spider.legistar_start(
+        {"Meeting Date": "1/1/2019", "Meeting Time": "12:00 PM"}
+    ) == datetime(2019, 1, 1, 12)
+    assert spider.legistar_start(
+        {"Meeting Date": "1/1/2019", "Meeting Time": "Cancelled"}
+    ) == datetime(2019, 1, 1)
+
+
+def test_legistar_source():
+    DEFAULT = "https://cityscrapers.legistar.com/Calendar.aspx"
+    EXAMPLE = "https://example.com"
+    spider = LegistarSpider(
+        name="city_scrapers",
+        start_urls=[DEFAULT],
+        allowed_domains=["cityscrapers.legistar.com"],
+    )
+    assert spider.legistar_source({"Name": {"url": EXAMPLE}}) == EXAMPLE
+    assert (
+        spider.legistar_source({"Meeting Details": {"url": EXAMPLE}, "Name": ""})
+        == EXAMPLE
+    )
+    assert spider.legistar_source({"Meeting Details": ""}) == DEFAULT
