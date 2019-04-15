@@ -1,11 +1,11 @@
 from city_scrapers_core.constants import NOT_CLASSIFIED, TENTATIVE
-from city_scrapers_core.decorators import ignore_jscalendar
+from city_scrapers_core.decorators import ignore_processed
 
 
 class DefaultValuesPipeline:
     """Sets default values for Meeting items"""
 
-    @ignore_jscalendar
+    @ignore_processed
     def process_item(self, item, spider):
         item.setdefault("description", "")
         item.setdefault("all_day", False)

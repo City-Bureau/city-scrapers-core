@@ -5,7 +5,7 @@ import pytest
 from scrapy.exceptions import DropItem
 
 from city_scrapers_core.constants import CANCELLED
-from city_scrapers_core.decorators import ignore_jscalendar
+from city_scrapers_core.decorators import ignore_processed
 from city_scrapers_core.items import Meeting
 from city_scrapers_core.pipelines import (
     DiffPipeline,
@@ -15,18 +15,20 @@ from city_scrapers_core.pipelines import (
 from city_scrapers_core.spiders import CityScrapersSpider
 
 
-def test_ignore_jscalendar():
+def test_ignore_processed():
     TEST_DICT = {"TEST": 1}
-    TEST_JSCALENDAR = {"cityscrapers.org/id": 2}
+    TEST_JSCALENDAR = {"uid": "1"}
+    TEST_OCD = {"_id": "1"}
 
     class MockPipeline:
-        @ignore_jscalendar
+        @ignore_processed
         def func(self, item, spider):
             return TEST_DICT
 
     pipeline = MockPipeline()
     assert pipeline.func({}, None) == TEST_DICT
     assert pipeline.func(TEST_JSCALENDAR, None) == TEST_JSCALENDAR
+    assert pipeline.func(TEST_OCD, None) == TEST_OCD
 
 
 def test_meeting_pipeline_sets_end():
@@ -70,7 +72,7 @@ def test_jscalendar_pipeline_duration():
 def test_diff_merges_uids():
     spider_mock = MagicMock()
     spider_mock._previous_map = {"1": "TEST", "2": "TEST"}
-    pipeline = DiffPipeline(None)
+    pipeline = DiffPipeline(None, "jscalendar")
     pipeline.previous_map = {"1": "TEST", "2": "TEST"}
     items = [{"id": "1"}, Meeting(id="2"), {"id": "3"}, Meeting(id="4")]
     results = [pipeline.process_item(item, spider_mock) for item in items]
@@ -81,9 +83,10 @@ def test_diff_merges_uids():
 
 def test_diff_ignores_previous_items():
     now = datetime.now()
-    pipeline = DiffPipeline(None)
+    pipeline = DiffPipeline(None, "jscalendar")
     spider_mock = MagicMock()
     previous = {
+        "uid": "1",
         "cityscrapers.org/id": "1",
         "start": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S"),
     }
@@ -94,9 +97,10 @@ def test_diff_ignores_previous_items():
 
 def test_diff_cancels_upcoming_previous_items():
     now = datetime.now()
-    pipeline = DiffPipeline(None)
+    pipeline = DiffPipeline(None, "jscalendar")
     spider_mock = MagicMock()
     previous = {
+        "uid": "1",
         "cityscrapers.org/id": "1",
         "start": (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S"),
     }

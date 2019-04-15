@@ -69,3 +69,39 @@ class StatusExtension:
 
     def update_status_svg(self, spider, svg):
         raise NotImplementedError
+
+
+class AzureBlobStatusExtension(StatusExtension):
+    def update_status_svg(self, spider, svg):
+        from azure.storage.blob import BlockBlobService, ContentSettings
+
+        blob_service = BlockBlobService(
+            account_name=self.crawler.settings.get("AZURE_ACCOUNT_NAME"),
+            account_key=self.crawler.settings.get("AZURE_ACCOUNT_KEY"),
+        )
+        blob_service.create_blob_from_text(
+            self.crawler.settings.get("CITY_SCRAPERS_STATUS_CONTAINER"),
+            "{}.svg".format(spider.name),
+            svg,
+            content_settings=ContentSettings(
+                content_type="image/svg+xml", cache_control="no-cache"
+            ),
+        )
+
+
+class S3StatusExtension(StatusExtension):
+    def update_status_svg(self, spider, svg):
+        import boto3
+
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=self.crawler.settings.get("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=self.crawler.settings.get("AWS_SECRET_ACCESS_KEY"),
+        )
+        s3_client.put_object(
+            Body=svg.encode(),
+            Bucket=self.crawler.settings.get("CITY_SCRAPERS_STATUS_BUCKET"),
+            CacheControl="no-cache",
+            ContentType="image/svg+xml",
+            Key="{}.svg".format(spider.name),
+        )

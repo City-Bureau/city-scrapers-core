@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from city_scrapers_core.decorators import ignore_jscalendar
+from city_scrapers_core.decorators import ignore_processed
 
 
 class JSCalendarPipeline:
@@ -10,7 +10,7 @@ class JSCalendarPipeline:
     https://tools.ietf.org/html/draft-ietf-calext-jscalendar-11
     """
 
-    @ignore_jscalendar
+    @ignore_processed
     def process_item(self, item, spider):
         return {
             "@type": "jsevent",
