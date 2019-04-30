@@ -4,7 +4,6 @@ from operator import attrgetter, itemgetter
 from urllib.parse import urlparse
 
 from pytz import timezone
-
 from scrapy import signals
 from scrapy.exceptions import DontCloseSpider, DropItem
 from scrapy.http import Response

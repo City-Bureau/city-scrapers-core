@@ -12,7 +12,6 @@ class OpenCivicDataPipeline:
 
     @ignore_processed
     def process_item(self, item, spider):
-        # TODO: Assign items based on current spec
         return {
             "_type": "event",
             "_id": item.get("_id") or "ocd-event/" + str(uuid1()),
@@ -23,10 +22,9 @@ class OpenCivicDataPipeline:
             "status": item["status"],
             "all_day": item["all_day"],
             "start_time": item["start"].isoformat()[:19],
-            "end_time": "",
+            "end_time": item["end"].isoformat()[:19],
             "timezone": spider.timezone,
-            "location": item["location"],
-            # TODO: Auto assign PDFs/Agenda/Minutes to documents?
+            "location": self.create_location(item),
             "documents": [],
             "links": [
                 {"note": link["title"], "url": link["href"]} for link in item["links"]
@@ -34,11 +32,12 @@ class OpenCivicDataPipeline:
             "sources": [{"url": item["source"], "note": ""}],
             "participants": [
                 {
-                    "note": "Host",
+                    "note": "host",
                     "name": spider.agency,
                     "entity_type": "organization",
                     "entity_name": spider.agency,
-                    "entity_id": "",  # TODO
+                    # TODO: Include an actual ID
+                    "entity_id": "",
                 }
             ],
             "extra": {
@@ -50,4 +49,7 @@ class OpenCivicDataPipeline:
         }
 
     def create_location(self, item):
-        return {}
+        loc_str = " ".join(
+            [item["location"]["name"], item["location"]["address"]]
+        ).strip()
+        return {"url": "", "name": loc_str, "coordinates": None}
