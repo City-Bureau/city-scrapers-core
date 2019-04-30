@@ -99,7 +99,7 @@ class DiffPipeline:
 class AzureDiffPipeline(DiffPipeline):
     """Azure Blob Storage backend for comparing previously scraped JSCalendar outputs"""
 
-    def __init__(self, crawler):
+    def __init__(self, crawler, output_format):
         from azure.storage.blob import BlockBlobService
 
         feed_uri = crawler.settings.get("FEED_URI")
@@ -112,7 +112,7 @@ class AzureDiffPipeline(DiffPipeline):
         self.feed_prefix = crawler.settings.get(
             "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
         )
-        super().__init__(crawler)
+        super().__init__(crawler, output_format)
 
     def load_previous_results(self):
         max_days_previous = 3
@@ -147,7 +147,7 @@ class AzureDiffPipeline(DiffPipeline):
 class S3DiffPipeline(DiffPipeline):
     """S3 backend for comparing previously scraped JSCalendar outputs"""
 
-    def __init__(self, crawler):
+    def __init__(self, crawler, output_format):
         import boto3
 
         parsed = urlparse(crawler.settings.get("FEED_URI"))
@@ -161,7 +161,7 @@ class S3DiffPipeline(DiffPipeline):
             aws_access_key_id=crawler.settings.get("AWS_ACCESS_KEY_ID"),
             aws_secret_access_key=crawler.settings.get("AWS_SECRET_ACCESS_KEY"),
         )
-        super().__init__(crawler)
+        super().__init__(crawler, output_format)
 
     def load_previous_results(self):
         max_days_previous = 3
