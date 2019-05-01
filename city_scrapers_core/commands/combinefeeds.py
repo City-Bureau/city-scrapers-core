@@ -65,9 +65,13 @@ class Command(ScrapyCommand):
             meetings.extend(
                 [json.loads(line) for line in feed_text.split("\n") if line.strip()]
             )
-        meetings = sorted(meetings, key=itemgetter("start"))
+        meetings = sorted(meetings, key=itemgetter(self.start_key))
         yesterday_iso = (datetime.now() - timedelta(days=1)).isoformat()[:19]
-        upcoming = [meeting for meeting in meetings if meeting["start"] > yesterday_iso]
+        upcoming = [
+            meeting
+            for meeting in meetings
+            if meeting[self.start_key][:19] > yesterday_iso
+        ]
 
         client.put_object(
             Body=("\n".join([json.dumps(meeting) for meeting in meetings])).encode(),
@@ -117,9 +121,13 @@ class Command(ScrapyCommand):
             meetings.extend(
                 [json.loads(line) for line in feed_text.content.split("\n") if line]
             )
-        meetings = sorted(meetings, key=itemgetter("start"))
+        meetings = sorted(meetings, key=itemgetter(self.start_key))
         yesterday_iso = (datetime.now() - timedelta(days=1)).isoformat()[:19]
-        upcoming = [meeting for meeting in meetings if meeting["start"] > yesterday_iso]
+        upcoming = [
+            meeting
+            for meeting in meetings
+            if meeting[self.start_key][:19] > yesterday_iso
+        ]
 
         blob_service.create_blob_from_text(
             container,
@@ -143,3 +151,10 @@ class Command(ScrapyCommand):
             if len(all_spider_paths) > 0:
                 spider_paths.append(sorted(all_spider_paths)[-1])
         return spider_paths
+
+    @property
+    def start_key(self):
+        pipelines = self.settings.get("ITEM_PIPELINES", {})
+        if "city_scrapers_core.pipelines.OpenCivicDataPipeline" in pipelines:
+            return "start_time"
+        return "start"
