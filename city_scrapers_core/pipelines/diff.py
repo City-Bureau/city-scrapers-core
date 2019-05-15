@@ -74,9 +74,10 @@ class DiffPipeline:
             scraper_id = item["cityscrapers.org/id"]
 
         # Drop items that are already included or are in the past
+        dt_str = datetime.now().isoformat()[:19]
         if (
             scraper_id in spider._scraped_ids
-            or item["start"] < datetime.now().isoformat()[:19]
+            or item.get("start", item.get("start_time")) < dt_str
         ):
             raise DropItem("Previous item is in scraped results or the past")
         # # If the item is upcoming and not scraped, mark it cancelled
