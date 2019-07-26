@@ -11,6 +11,7 @@ from city_scrapers_core.pipelines import (
     DiffPipeline,
     JSCalendarPipeline,
     MeetingPipeline,
+    ValidationPipeline,
 )
 from city_scrapers_core.spiders import CityScrapersSpider
 
@@ -108,3 +109,25 @@ def test_diff_cancels_upcoming_previous_items():
     result = pipeline.process_item(previous, spider_mock)
     assert result["cityscrapers.org/id"] == "1"
     assert result["status"] == CANCELLED
+
+
+def test_validation_handles_errors():
+    pipeline = ValidationPipeline()
+    pipeline.open_spider(None)
+    item = Meeting(
+        id="test",
+        title="Test",
+        description="",
+        classification="Board",
+        status="tentative",
+        start=datetime.now(),
+        end=datetime.now() + timedelta(hours=1),
+        all_day=False,
+        time_notes="",
+        location={"name": "", "address": ""},
+        links=None,
+        source="",
+    )
+    pipeline.process_item(item, None)
+    assert pipeline.item_count == 1
+    assert pipeline.error_count["links"] == 1

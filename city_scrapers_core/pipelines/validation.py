@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 
 from jsonschema.validators import Draft7Validator
@@ -35,7 +34,7 @@ class ValidationPipeline:
         validator = Draft7Validator(item.jsonschema)
         props = list(item.jsonschema["properties"].keys())
         errors = list(validator.iter_errors(item_dict))
-        error_props = [self._get_prop_from_error(error) for error in errors]
+        error_props = self._get_props_from_errors(errors)
         for prop in props:
             self.error_count[prop] += 1 if prop in error_props else 0
         self.item_count += 1
@@ -68,5 +67,9 @@ class ValidationPipeline:
             else:
                 print(message)
 
-    def _get_prop_from_error(self, error):
-        return re.search(r"(?<=')\w+(?=')").group()
+    def _get_props_from_errors(self, errors):
+        error_props = []
+        for error in errors:
+            if len(error.path) > 0:
+                error_props.append(error.path[0])
+        return error_props
