@@ -68,11 +68,7 @@ def test_legistar_start():
 def test_legistar_source():
     DEFAULT = "https://cityscrapers.legistar.com/Calendar.aspx"
     EXAMPLE = "https://example.com"
-    spider = LegistarSpider(
-        name="city_scrapers",
-        start_urls=[DEFAULT],
-        allowed_domains=["cityscrapers.legistar.com"],
-    )
+    spider = LegistarSpider(name="city_scrapers", start_urls=[DEFAULT])
     assert spider.legistar_source({"Name": {"url": EXAMPLE}}) == EXAMPLE
     assert (
         spider.legistar_source({"Meeting Details": {"url": EXAMPLE}, "Name": ""})

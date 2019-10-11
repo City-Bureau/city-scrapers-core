@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 
 from legistar.events import LegistarEventsScraper
 
@@ -50,5 +51,5 @@ class LegistarSpider(CityScrapersSpider):
 
     @property
     def base_url(self):
-        proto = "https" if self.start_urls[0].startswith("https://") else "http"
-        return "{}://{}".format(proto, self.allowed_domains[0])
+        parsed_url = urlparse(self.start_urls[0])
+        return "{}://{}".format(parsed_url.scheme, parsed_url.netloc)
