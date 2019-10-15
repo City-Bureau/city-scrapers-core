@@ -1,6 +1,6 @@
 # City Scrapers Core
 
-[![Build Status](https://travis-ci.org/City-Bureau/city-scrapers-core.svg?branch=master)](https://travis-ci.org/City-Bureau/city-scrapers-core)
+[![Build status](https://github.com/City-Bureau/city-scrapers-core/workflows/CI/badge.svg)](https://github.com/City-Bureau/city-scrapers-core/actions)
 
 Core functionality for creating public meetings web scrapers for the [City Scrapers](https://cityscrapers.org/) project.
 
