@@ -87,15 +87,16 @@ class Command(ScrapyCommand):
         )
 
     def combine_azure(self):
-        from azure.storage.blob import BlockBlobService, ContentSettings
+        from azure.storage.blob import BlobServiceClient, ContentSettings
 
         feed_uri = self.settings.get("FEED_URI")
         feed_prefix = self.settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         container = feed_uri.split("@")[1].split("/")[0]
-        blob_service = BlockBlobService(
-            account_name=account_name, account_key=account_key
+        blob_service = BlobServiceClient(
+            "{}.blob.core.windows.net".format(account_name), credential=account_key
         )
+        container_client = blob_service.get_container_client(container)
 
         max_days_previous = 3
         days_previous = 0
@@ -103,11 +104,10 @@ class Command(ScrapyCommand):
         while days_previous <= max_days_previous:
             prefix_blobs = [
                 blob
-                for blob in blob_service.list_blobs(
-                    container,
-                    prefix=(datetime.now() - timedelta(days=days_previous)).strftime(
-                        feed_prefix
-                    ),
+                for blob in container_client.list_blobs(
+                    name_starts_with=(
+                        datetime.now() - timedelta(days=days_previous)
+                    ).strftime(feed_prefix)
                 )
             ]
             if len(prefix_blobs) > 0:
@@ -117,9 +117,12 @@ class Command(ScrapyCommand):
         spider_blob_names = self.get_spider_paths([blob.name for blob in prefix_blobs])
         meetings = []
         for blob_name in spider_blob_names:
-            feed_text = blob_service.get_blob_to_text(container, blob_name)
+            feed_blob = blob_service.get_blob_client(
+                container=container, blob=blob_name
+            )
+            feed_text = feed_blob.download_blob().content_as_text()
             meetings.extend(
-                [json.loads(line) for line in feed_text.content.split("\n") if line]
+                [json.loads(line) for line in feed_text.split("\n") if line]
             )
         meetings = sorted(meetings, key=itemgetter(self.start_key))
         yesterday_iso = (datetime.now() - timedelta(days=1)).isoformat()[:19]
@@ -129,18 +132,18 @@ class Command(ScrapyCommand):
             if meeting[self.start_key][:19] > yesterday_iso
         ]
 
-        blob_service.create_blob_from_text(
-            container,
+        container_client.upload_blob(
             "latest.json",
             "\n".join([json.dumps(meeting) for meeting in meetings]),
             content_settings=ContentSettings(cache_control="no-cache"),
+            overwrite=True,
         )
 
-        blob_service.create_blob_from_text(
-            container,
+        container_client.upload_blob(
             "upcoming.json",
             "\n".join([json.dumps(meeting) for meeting in upcoming]),
             content_settings=ContentSettings(cache_control="no-cache"),
+            overwrite=True,
         )
 
     def get_spider_paths(self, path_list):

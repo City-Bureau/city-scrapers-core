@@ -101,15 +101,16 @@ class AzureDiffPipeline(DiffPipeline):
     """Azure Blob Storage backend for comparing previously scraped JSCalendar outputs"""
 
     def __init__(self, crawler, output_format):
-        from azure.storage.blob import BlockBlobService
+        from azure.storage.blob import BlobServiceClient
 
         feed_uri = crawler.settings.get("FEED_URI")
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         self.spider = crawler.spider
-        self.blob_service = BlockBlobService(
-            account_name=account_name, account_key=account_key
+        self.blob_service = BlobServiceClient(
+            "{}.blob.core.windows.net".format(account_name), credential=account_key
         )
         self.container = feed_uri.split("@")[1].split("/")[0]
+        self.container_client = self.blob_service.get_container_client(self.container)
         self.feed_prefix = crawler.settings.get(
             "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
         )
@@ -120,11 +121,10 @@ class AzureDiffPipeline(DiffPipeline):
         days_previous = 0
         tz = timezone(self.spider.timezone)
         while days_previous <= max_days_previous:
-            matching_blobs = self.blob_service.list_blobs(
-                self.container,
-                prefix=(
+            matching_blobs = self.container_client.list_blobs(
+                name_starts_with=(
                     tz.localize(datetime.now()) - timedelta(days=days_previous)
-                ).strftime(self.feed_prefix),
+                ).strftime(self.feed_prefix)
             )
             spider_blobs = [
                 blob
@@ -139,10 +139,11 @@ class AzureDiffPipeline(DiffPipeline):
             return []
 
         blob = sorted(spider_blobs, key=attrgetter("name"))[-1]
-        feed_text = self.blob_service.get_blob_to_text(self.container, blob.name)
-        return [
-            json.loads(line) for line in feed_text.content.split("\n") if line.strip()
-        ]
+        feed_blob = self.blob_service.get_blob_client(
+            container=self.container, blob=blob.name
+        )
+        feed_text = feed_blob.download_blob().content_as_text()
+        return [json.loads(line) for line in feed_text.split("\n") if line.strip()]
 
 
 class S3DiffPipeline(DiffPipeline):
