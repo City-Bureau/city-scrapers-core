@@ -14,8 +14,8 @@ from city_scrapers_core.items import Meeting
 
 class DiffPipeline:
     """
-    Class for loading and comparing previous feed export results in OCD or JSCalendar
-    format. Either merges UIDs for consistency or marks upcoming meetings that no longer
+    Class for loading and comparing previous feed export results in OCD format.
+    Either merges UIDs for consistency or marks upcoming meetings that no longer
     appear as cancelled.
 
     Provider-specific backends can be created by subclassing and implementing the
@@ -29,24 +29,17 @@ class DiffPipeline:
     @classmethod
     def from_crawler(cls, crawler):
         pipelines = crawler.settings.get("ITEM_PIPELINES", {})
-        if "city_scrapers_core.pipelines.JSCalendarPipeline" in pipelines:
-            output_format = "jscalendar"
-        elif "city_scrapers_core.pipelines.OpenCivicDataPipeline" in pipelines:
+        if "city_scrapers_core.pipelines.OpenCivicDataPipeline" in pipelines:
             output_format = "ocd"
         else:
             raise ValueError(
-                "One of the output format pipelines must be enabled for diff middleware"
+                "An output format pipeline must be enabled for diff middleware"
             )
         pipeline = cls(crawler, output_format)
         crawler.spider._previous_results = pipeline.load_previous_results()
         if output_format == "ocd":
             crawler.spider._previous_map = {
                 result["extra"]["cityscrapers.org/id"]: result["_id"]
-                for result in crawler.spider._previous_results
-            }
-        elif output_format == "jscalendar":
-            crawler.spider._previous_map = {
-                result["cityscrapers.org/id"]: result["uid"]
                 for result in crawler.spider._previous_results
             }
         crawler.spider._scraped_ids = set()
@@ -56,7 +49,7 @@ class DiffPipeline:
     def process_item(self, item, spider):
         """Merge past UIDs with items if a match, cancel missing upcoming meetings"""
         # Merge uid if this is a current item
-        id_key = "_id" if self.output_format == "ocd" else "uid"
+        id_key = "_id"
         if isinstance(item, Meeting) or (isinstance(item, dict) and id_key not in item):
             if item["id"] in spider._scraped_ids:
                 raise DropItem("Item has already been scraped")
@@ -70,8 +63,6 @@ class DiffPipeline:
             return item
         if self.output_format == "ocd":
             scraper_id = item["extra"]["cityscrapers.org/id"]
-        elif self.output_format == "jscalendar":
-            scraper_id = item["cityscrapers.org/id"]
 
         # Drop items that are already included or are in the past
         dt_str = datetime.now().isoformat()[:19]

@@ -7,7 +7,7 @@ def ignore_processed(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         for i in range(2):
-            if isinstance(args[i], dict) and ("uid" in args[i] or "_id" in args[i]):
+            if isinstance(args[i], dict) and "_id" in args[i]:
                 return args[i]
         return func(*args, **kwargs)
 
