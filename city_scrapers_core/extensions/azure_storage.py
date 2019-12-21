@@ -3,7 +3,7 @@ from scrapy.extensions.feedexport import BlockingFeedStorage
 
 class AzureBlobFeedStorage(BlockingFeedStorage):
     def __init__(self, uri):
-        from azure.storage.blob import BlobServiceClient
+        from azure.storage.blob import ContainerClient
 
         container = uri.split("@")[1].split("/")[0]
         filename = "/".join(uri.split("@")[1].split("/")[1::])
@@ -13,11 +13,11 @@ class AzureBlobFeedStorage(BlockingFeedStorage):
         self.account_key = account_key
         self.container = container
         self.filename = filename
-        self.blob_service = BlobServiceClient(
+        self.container_client = ContainerClient(
             "{}.blob.core.windows.net".format(self.account_name),
+            self.container,
             credential=self.account_key,
         )
-        self.container_client = self.blob_service.get_container_client(self.container)
 
     def _store_in_thread(self, file):
         file.seek(0)

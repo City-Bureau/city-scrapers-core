@@ -101,20 +101,20 @@ class AzureDiffPipeline(DiffPipeline):
     """Azure Blob Storage backend for comparing previously scraped JSCalendar outputs"""
 
     def __init__(self, crawler, output_format):
-        from azure.storage.blob import BlobServiceClient
+        from azure.storage.blob import ContainerClient
 
         feed_uri = crawler.settings.get("FEED_URI")
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         self.spider = crawler.spider
-        self.blob_service = BlobServiceClient(
-            "{}.blob.core.windows.net".format(account_name), credential=account_key
-        )
         self.container = feed_uri.split("@")[1].split("/")[0]
-        self.container_client = self.blob_service.get_container_client(self.container)
+        self.container_client = ContainerClient(
+            "{}.blob.core.windows.net".format(account_name),
+            self.container,
+            credential=account_key,
+        )
         self.feed_prefix = crawler.settings.get(
             "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
         )
-        super().__init__(crawler, output_format)
 
     def load_previous_results(self):
         max_days_previous = 3

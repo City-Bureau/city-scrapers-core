@@ -73,16 +73,14 @@ class StatusExtension:
 
 class AzureBlobStatusExtension(StatusExtension):
     def update_status_svg(self, spider, svg):
-        from azure.storage.blob import BlobServiceClient, ContentSettings
+        from azure.storage.blob import ContainerClient, ContentSettings
 
-        blob_service = BlobServiceClient(
+        container_client = ContainerClient(
             "{}.blob.core.windows.net".format(
                 self.crawler.settings.get("AZURE_ACCOUNT_NAME")
             ),
+            self.crawler.settings.get("CITY_SCRAPERS_STATUS_CONTAINER"),
             credential=self.crawler.settings.get("AZURE_ACCOUNT_KEY"),
-        )
-        container_client = blob_service.get_container_client(
-            self.crawler.settings.get("CITY_SCRAPERS_STATUS_CONTAINER")
         )
         container_client.upload_blob(
             "{}.svg".format(spider.name),

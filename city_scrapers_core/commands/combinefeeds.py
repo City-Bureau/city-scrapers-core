@@ -87,16 +87,17 @@ class Command(ScrapyCommand):
         )
 
     def combine_azure(self):
-        from azure.storage.blob import BlobServiceClient, ContentSettings
+        from azure.storage.blob import ContainerClient, ContentSettings
 
         feed_uri = self.settings.get("FEED_URI")
         feed_prefix = self.settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         container = feed_uri.split("@")[1].split("/")[0]
-        blob_service = BlobServiceClient(
-            "{}.blob.core.windows.net".format(account_name), credential=account_key
+        container_client = ContainerClient(
+            "{}.blob.core.windows.net".format(account_name),
+            container,
+            credential=account_key,
         )
-        container_client = blob_service.get_container_client(container)
 
         max_days_previous = 3
         days_previous = 0
@@ -117,9 +118,7 @@ class Command(ScrapyCommand):
         spider_blob_names = self.get_spider_paths([blob.name for blob in prefix_blobs])
         meetings = []
         for blob_name in spider_blob_names:
-            feed_blob = blob_service.get_blob_client(
-                container=container, blob=blob_name
-            )
+            feed_blob = container_client.get_blob_client(blob_name)
             feed_text = feed_blob.download_blob().content_as_text()
             meetings.extend(
                 [json.loads(line) for line in feed_text.split("\n") if line]
