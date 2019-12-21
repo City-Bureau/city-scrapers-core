@@ -30,4 +30,4 @@ jobs:
       with:
         node-version: "11.x"
     - run: npm install -g conventional-github-releaser
-    - run: conventional-github-releaser -t ${{ secrets.GITHUB_TOKEN }} -p angular
+    - run: conventional-github-releaser -t ${{ secrets.GITHUB_TOKEN }} -p conventional
