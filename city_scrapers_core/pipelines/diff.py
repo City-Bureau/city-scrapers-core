@@ -130,9 +130,7 @@ class AzureDiffPipeline(DiffPipeline):
             return []
 
         blob = sorted(spider_blobs, key=attrgetter("name"))[-1]
-        feed_blob = self.blob_service.get_blob_client(
-            container=self.container, blob=blob.name
-        )
+        feed_blob = self.container_client.get_blob_client(blob.name)
         feed_text = feed_blob.download_blob().content_as_text()
         return [json.loads(line) for line in feed_text.split("\n") if line.strip()]
 
