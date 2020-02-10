@@ -106,6 +106,7 @@ class AzureDiffPipeline(DiffPipeline):
         self.feed_prefix = crawler.settings.get(
             "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
         )
+        super().__init__(crawler, output_format)
 
     def load_previous_results(self):
         max_days_previous = 3
