@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from operator import itemgetter
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
@@ -65,6 +65,13 @@ class Command(ScrapyCommand):
             meetings.extend(
                 [json.loads(line) for line in feed_text.split("\n") if line.strip()]
             )
+            # Copy latest results for each spider
+            spider_key = key.split("/")[-1]
+            client.copy_object(
+                Bucket=bucket,
+                Key=spider_key,
+                CopySource={"Bucket": bucket, "Key": key},
+            )
         meetings = sorted(meetings, key=itemgetter(self.start_key))
         yesterday_iso = (datetime.now() - timedelta(days=1)).isoformat()[:19]
         upcoming = [
@@ -122,6 +129,14 @@ class Command(ScrapyCommand):
             feed_text = feed_blob.download_blob().content_as_text()
             meetings.extend(
                 [json.loads(line) for line in feed_text.split("\n") if line]
+            )
+            # Copy latest results for each spider
+            spider_blob_name = blob_name.split("/")[-1]
+            spider_blob = container_client.get_blob_client(spider_blob_name)
+            spider_blob.start_copy_from_url(
+                "https://{}.blob.core.windows.net/{}/{}".format(
+                    account_name, quote(container), blob_name
+                )
             )
         meetings = sorted(meetings, key=itemgetter(self.start_key))
         yesterday_iso = (datetime.now() - timedelta(days=1)).isoformat()[:19]
