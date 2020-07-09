@@ -12,6 +12,6 @@ pip install https://github.com/opencivicdata/python-legistar-scraper/tarball/mas
 # To install base package
 pip install city-scrapers-core
 # To install with AWS or Azure dependencies
-pip install city-scrapers-core[aws]
-pip install city-scrapers-core[azure]
+pip install 'city-scrapers-core[aws]'
+pip install 'city-scrapers-core[azure]'
 ```
