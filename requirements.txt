@@ -4,6 +4,7 @@ legistar
 pytz
 requests
 scrapy
+black
 flake8
 pytest
 isort
