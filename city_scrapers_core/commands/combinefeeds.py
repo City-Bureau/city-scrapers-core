@@ -101,9 +101,7 @@ class Command(ScrapyCommand):
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         container = feed_uri.split("@")[1].split("/")[0]
         container_client = ContainerClient(
-            "{}.blob.core.windows.net".format(account_name),
-            container,
-            credential=account_key,
+            f"{account_name}.blob.core.windows.net", container, credential=account_key,
         )
 
         max_days_previous = 3
@@ -134,9 +132,8 @@ class Command(ScrapyCommand):
             spider_blob_name = blob_name.split("/")[-1]
             spider_blob = container_client.get_blob_client(spider_blob_name)
             spider_blob.start_copy_from_url(
-                "https://{}.blob.core.windows.net/{}/{}".format(
-                    account_name, quote(container), blob_name
-                )
+                f"https://{account_name}.blob.core.windows.net"
+                f"/{quote(container)}/{blob_name}"
             )
         meetings = sorted(meetings, key=itemgetter(self.start_key))
         yesterday_iso = (datetime.now() - timedelta(days=1)).isoformat()[:19]
@@ -164,7 +161,7 @@ class Command(ScrapyCommand):
         """Get a list of the most recent scraper results for each spider"""
         spider_paths = []
         for spider in self.crawler_process.spider_loader.list():
-            all_spider_paths = [p for p in path_list if "{}.".format(spider) in p]
+            all_spider_paths = [p for p in path_list if f"{spider}." in p]
             if len(all_spider_paths) > 0:
                 spider_paths.append(sorted(all_spider_paths)[-1])
         return spider_paths

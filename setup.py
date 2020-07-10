@@ -21,7 +21,7 @@ setup(
     install_requires=["jsonschema>=3.0.0a5", "pytz", "requests", "scrapy"],
     tests_requires=["flake8", "pytest", "isort"],
     extras_require={"aws": ["boto3"], "azure": ["azure-storage-blob>=12"]},
-    python_requires=">=3.5,<4.0",
+    python_requires=">=3.6,<4.0",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

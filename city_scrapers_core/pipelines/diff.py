@@ -99,7 +99,7 @@ class AzureDiffPipeline(DiffPipeline):
         self.spider = crawler.spider
         self.container = feed_uri.split("@")[1].split("/")[0]
         self.container_client = ContainerClient(
-            "{}.blob.core.windows.net".format(account_name),
+            f"{account_name}.blob.core.windows.net",
             self.container,
             credential=account_key,
         )
@@ -119,9 +119,7 @@ class AzureDiffPipeline(DiffPipeline):
                 ).strftime(self.feed_prefix)
             )
             spider_blobs = [
-                blob
-                for blob in matching_blobs
-                if "{}.".format(self.spider.name) in blob.name
+                blob for blob in matching_blobs if f"{self.spider_name}." in blob.name
             ]
             if len(spider_blobs) > 0:
                 break
@@ -170,7 +168,7 @@ class S3DiffPipeline(DiffPipeline):
             spider_objects = [
                 obj
                 for obj in match_objects.get("Contents", [])
-                if "{}.".format(self.spider.name) in obj["Key"]
+                if f"{self.spider.name}." in obj["Key"]
             ]
             if len(spider_objects) > 0:
                 break

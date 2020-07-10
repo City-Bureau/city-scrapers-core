@@ -1,9 +1,13 @@
+import logging
 import os
 from importlib import import_module
 
 from scrapy.commands import ScrapyCommand
 
 from ..pipelines import ValidationPipeline
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(ScrapyCommand):
@@ -29,7 +33,7 @@ class Command(ScrapyCommand):
         spider_list = self.crawler_process.spider_loader.list()
         spiders = [spider for spider in args if spider in spider_list]
         if len(spiders) == 0 and not opts.all:
-            print("No spiders provided, exiting...")
+            logger.info("No spiders provided, exiting...")
             return
         elif opts.all:
             spiders = spider_list
@@ -44,7 +48,7 @@ class Command(ScrapyCommand):
         # Exit if pipeline already included
         if any(pipeline_name in pipeline for pipeline in pipelines.keys()):
             return
-        fullname = "{}.{}".format(ValidationPipeline.__module__, pipeline_name)
+        fullname = f"{ValidationPipeline.__module__}.{pipeline_name}"
         priority = 1
         if len(pipelines.keys()) > 0:
             priority = max(pipelines.values()) + 1

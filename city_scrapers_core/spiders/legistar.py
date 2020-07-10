@@ -18,7 +18,7 @@ class LegistarSpider(CityScrapersSpider):
     def _call_legistar(self, since=None):
         les = LegistarEventsScraper()
         les.BASE_URL = self.base_url
-        les.EVENTSPAGE = "{}/Calendar.aspx".format(self.base_url)
+        les.EVENTSPAGE = f"{self.base_url}/Calendar.aspx"
         if not since:
             since = datetime.today().year
         return les.events(since=since)
@@ -29,7 +29,7 @@ class LegistarSpider(CityScrapersSpider):
         if start_date and start_time:
             try:
                 return datetime.strptime(
-                    "{} {}".format(start_date, start_time), "%m/%d/%Y %I:%M %p"
+                    f"{start_date} {start_time}", "%m/%d/%Y %I:%M %p"
                 )
             except ValueError:
                 return datetime.strptime(start_date, "%m/%d/%Y")
@@ -42,7 +42,7 @@ class LegistarSpider(CityScrapersSpider):
         return links
 
     def legistar_source(self, item):
-        default_url = "{}/Calendar.aspx".format(self.base_url)
+        default_url = f"{self.base_url}/Calendar.aspx"
         if isinstance(item.get("Name"), dict):
             return item["Name"].get("url", default_url)
         if isinstance(item.get("Meeting Details"), dict):
@@ -52,4 +52,4 @@ class LegistarSpider(CityScrapersSpider):
     @property
     def base_url(self):
         parsed_url = urlparse(self.start_urls[0])
-        return "{}://{}".format(parsed_url.scheme, parsed_url.netloc)
+        return f"{parsed_url.scheme}://{parsed_url.netloc}"

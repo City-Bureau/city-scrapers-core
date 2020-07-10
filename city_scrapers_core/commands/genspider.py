@@ -1,3 +1,4 @@
+import logging
 import json
 import shutil
 import string
@@ -13,6 +14,8 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36"  # noqa
+
+logger = logging.getLogger(__name__)
 
 
 class Command(ScrapyCommand):
@@ -34,13 +37,13 @@ class Command(ScrapyCommand):
         test_template = "test.tmpl"
         if "legistar.com" in domain:
             proto = "https" if start_url.startswith("https") else "http"
-            start_url = "{}://{}".format(proto, domain)
+            start_url = f"{proto}://{domain}"
             spider_template = "spider_legistar.tmpl"
             test_template = "test_legistar.tmpl"
             fixture_file = self._gen_legistar_fixtures(name, start_url)
         else:
             fixture_file = self._gen_fixtures(name, start_url)
-        classname = "{}Spider".format(string.capwords(name, sep="_").replace("_", ""))
+        classname = f"{string.capwords(name, sep='_').replace('_', '')}Spider"
         self._genspider(name, agency, classname, domain, start_url, spider_template)
         self._gen_tests(name, classname, start_url, fixture_file, test_template)
 
@@ -51,14 +54,12 @@ class Command(ScrapyCommand):
             "agency": agency,
             "domain": domain,
             "start_url": start_url,
-            "classname": "{}Spider".format(
-                string.capwords(name, sep="_").replace("_", "")
-            ),
+            "classname": f"{string.capwords(name, sep='_').replace('_', '')}Spider",
         }
-        spider_file = "{}.py".format(join(self.spiders_dir, name))
+        spider_file = f"{join(self.spiders_dir, name)}.py"
         shutil.copyfile(join(self.templates_dir, template_file), spider_file)
         render_templatefile(spider_file, **template_dict)
-        print("Created file: {}".format(spider_file))
+        logger.info(f"Created file: {spider_file}")
 
     def _gen_tests(self, name, classname, start_url, fixture_file, template_file):
         """Creates tests from test template file"""
@@ -70,34 +71,34 @@ class Command(ScrapyCommand):
         }
         if "legistar" not in name:
             template_dict["start_url"] = start_url
-        test_file = join(self.tests_dir, "test_{}.py".format(name))
+        test_file = join(self.tests_dir, f"test_{name}.py")
         shutil.copyfile(join(self.templates_dir, template_file), test_file)
         render_templatefile(test_file, **template_dict)
-        print("Created file: {}".format(test_file))
+        logger.info(f"Created file: {test_file}")
 
     def _gen_fixtures(self, name, start_url):
         """Creates fixures from HTML response at the start URL"""
         res = requests.get(start_url, headers={"user-agent": USER_AGENT})
         content = res.text.strip()
-        fixture_file = join(self.fixtures_dir, "{}.html".format(name))
+        fixture_file = join(self.fixtures_dir, f"{name}.html")
         with open(fixture_file, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Created file: {}".format(fixture_file))
-        return "{}.html".format(name)
+        logger.info(f"Created file: {fixture_file}")
+        return f"{name}.html"
 
     def _gen_legistar_fixtures(self, name, start_url):
         """Creates fixtures from a Legistar response"""
         events = []
         les = LegistarEventsScraper()
         les.BASE_URL = start_url
-        les.EVENTSPAGE = "{}/Calendar.aspx".format(start_url)
+        les.EVENTSPAGE = f"{start_url}/Calendar.aspx"
         for event, _ in les.events(since=datetime.today().year):
             events.append((dict(event), None))
-        fixture_file = join(self.fixtures_dir, "{}.json".format(name))
+        fixture_file = join(self.fixtures_dir, f"{name}.json")
         with open(fixture_file, "w", encoding="utf-8") as f:
             json.dump(events, f)
-        print("Created file: {}".format(fixture_file))
-        return "{}.json".format(name)
+        logger.info(f"Created file: {fixture_file}")
+        return f"{name}.json"
 
     @property
     def spiders_dir(self):

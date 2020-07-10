@@ -1,6 +1,10 @@
+import logging
 from collections import defaultdict
 
 from jsonschema.validators import Draft7Validator
+
+
+logger = logging.getLogger(__name__)
 
 
 class ValidationPipeline:
@@ -43,17 +47,14 @@ class ValidationPipeline:
     def validation_report(self, spider):
         """Prints a validation report to stdout and raise an error if fails"""
         props = list(self.error_count.keys())
-        print(
-            "\n{line}Validation summary for: {spider}{line}".format(
-                line="-" * 12, spider=spider.name
-            )
-        )
-        print("Validating {} items\n".format(self.item_count))
+        line_str = "-" * 12
+        logger.info(f"\n{line_str}\nValidation summary for: {spider.name}\n{line_str}")
+        logger.info(f"Validating {self.item_count} items\n")
         valid_list = []
         for prop in props:
             valid = (self.item_count - self.error_count[prop]) / self.item_count
             valid_list.append(valid)
-            print("{}: {:.0%}".format(prop, valid))
+            logger.info("{}: {:.0%}".format(prop, valid))
         try:
             assert all([val >= 0.9 for val in valid_list])
         except AssertionError:
@@ -66,7 +67,7 @@ class ValidationPipeline:
             if self.enforce_validation:
                 raise ValueError(message)
             else:
-                print(message)
+                logger.info(message)
 
     def _get_props_from_errors(self, errors):
         error_props = []
