@@ -6,7 +6,6 @@ from scrapy.commands import ScrapyCommand
 
 from ..pipelines import ValidationPipeline
 
-
 logger = logging.getLogger(__name__)
 
 

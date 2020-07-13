@@ -2,7 +2,12 @@ from functools import wraps
 
 
 def ignore_processed(func):
-    """Method decorator to ignore processed items passed to pipeline by middleware"""
+    """Method decorator to ignore processed items passed to pipeline by middleware.
+
+    This should be used on the ``process_item`` method of any additional custom
+    pipelines used to handle :class:`Meeting` objects to make sure that ``dict`` items
+    passed by :class:`DiffPipeline` don't cause issues.
+    """
 
     @wraps(func)
     def wrapper(*args, **kwargs):

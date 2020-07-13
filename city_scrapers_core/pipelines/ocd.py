@@ -1,19 +1,27 @@
 from datetime import datetime
+from typing import Mapping
 from uuid import uuid1
 
 import pytz
+from scrapy import Spider
 
-from city_scrapers_core.decorators import ignore_processed
+from ..decorators import ignore_processed
 
 
 class OpenCivicDataPipeline:
-    """
-    Pipeline for transforming Meeting items into Open Civic Data Event format
-    https://opencivicdata.readthedocs.io/en/latest/data/event.html
+    """Pipeline for transforming Meeting items into the `Open Civic Data Event format
+    <https://opencivicdata.readthedocs.io/en/latest/data/event.html>`_.
     """
 
     @ignore_processed
-    def process_item(self, item, spider):
+    def process_item(self, item: Mapping, spider: Spider) -> Mapping:
+        """Takes a dict-like object and converts it into an Open Civic Data Event.
+
+        :param item: Item to be converted
+        :param spider: Current spider being run
+        :return: Dict formatted as an OCD event
+        """
+
         tz = pytz.timezone(spider.timezone)
         return {
             "_type": "event",
@@ -51,7 +59,13 @@ class OpenCivicDataPipeline:
             },
         }
 
-    def create_location(self, item):
+    def create_location(self, item: Mapping) -> Mapping:
+        """Creates an OCD-formatted location from a scraped item's data
+
+        :param item: Item to process the location
+        :return: Dict of the location
+        """
+
         loc_str = " ".join(
             [item["location"]["name"] or "", item["location"]["address"] or ""]
         ).strip()

@@ -1,20 +1,21 @@
 import json
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
+from typing import List, Mapping
 from urllib.parse import urlparse
 
 from pytz import timezone
-from scrapy import signals
+from scrapy import Spider, signals
+from scrapy.crawler import Crawler
 from scrapy.exceptions import DontCloseSpider, DropItem
 from scrapy.http import Response
 
-from city_scrapers_core.constants import CANCELLED
-from city_scrapers_core.items import Meeting
+from ..constants import CANCELLED
+from ..items import Meeting
 
 
 class DiffPipeline:
-    """
-    Class for loading and comparing previous feed export results in OCD format.
+    """Class for loading and comparing previous feed export results in OCD format.
     Either merges UIDs for consistency or marks upcoming meetings that no longer
     appear as cancelled.
 
@@ -22,12 +23,23 @@ class DiffPipeline:
     `load_previous_results` method.
     """
 
-    def __init__(self, crawler, output_format):
+    def __init__(self, crawler: Crawler, output_format: str):
+        """Initialize a DiffPipeline object, setting the crawler and output format
+
+        :param crawler: Current Crawler object
+        :param output_format: Currently only "ocd" is supported
+        """
         self.crawler = crawler
         self.output_format = output_format
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler):
+        """Classmethod for creating a pipeline object from a Crawler
+
+        :param crawler: Crawler currently being run
+        :raises ValueError: Raises an error if an output format is not supplied
+        :return: Instance of DiffPipeline
+        """
         pipelines = crawler.settings.get("ITEM_PIPELINES", {})
         if "city_scrapers_core.pipelines.OpenCivicDataPipeline" in pipelines:
             output_format = "ocd"
@@ -46,8 +58,16 @@ class DiffPipeline:
         crawler.signals.connect(pipeline.spider_idle, signal=signals.spider_idle)
         return pipeline
 
-    def process_item(self, item, spider):
-        """Merge past UIDs with items if a match, cancel missing upcoming meetings"""
+    def process_item(self, item: Mapping, spider: Spider) -> Mapping:
+        """Processes Item objects or general dict-like objects and compares them to
+        previously scraped values.
+
+        :param item: Dict-like item to process from a scraper
+        :param spider: Spider currently being scraped
+        :raises DropItem: Drops items with IDs that have been already scraped
+        :raises DropItem: Drops items that are in the past and already scraped
+        :return: Returns the item, merged with previous values if found
+        """
         # Merge uid if this is a current item
         id_key = "_id"
         if isinstance(item, Meeting) or (isinstance(item, dict) and id_key not in item):
@@ -75,23 +95,39 @@ class DiffPipeline:
         spider._scraped_ids.add(scraper_id)
         return {**item, "status": CANCELLED}
 
-    def spider_idle(self, spider):
-        """Add _previous_results to spider queue when current results finish"""
+    def spider_idle(self, spider: Spider):
+        """Add _previous_results to spider queue when current results finish
+
+        :param spider: Spider being scraped
+        :raises DontCloseSpider: Makes sure spider isn't closed to make sure prior
+                                 results are processed
+        """
         scraper = self.crawler.engine.scraper
         self.crawler.signals.disconnect(self.spider_idle, signal=signals.spider_idle)
         for item in spider._previous_results:
             scraper._process_spidermw_output(item, None, Response(""), spider)
         raise DontCloseSpider
 
-    def load_previous_results(self):
-        """Return a list of dictionaries loaded from a previous feed export"""
+    def load_previous_results(self) -> List[Mapping]:
+        """Method that must be implemented for loading previously-scraped results
+
+        :raises NotImplementedError: Required to be implemented on subclasses
+        :return: Items previously scraped and loaded from a storage backend
+        """
         raise NotImplementedError
 
 
 class AzureDiffPipeline(DiffPipeline):
-    """Azure Blob Storage backend for comparing previously scraped JSCalendar outputs"""
+    """Implements :class:`DiffPipeline` for Azure Blob Storage
+    """
 
-    def __init__(self, crawler, output_format):
+    def __init__(self, crawler: Crawler, output_format: str):
+        """Initialize :class:`AzureDiffPipeline` from a crawler and set account values
+
+        :param crawler: Current Crawler object
+        :param output_format: Currently only "ocd" is supported
+        """
+
         from azure.storage.blob import ContainerClient
 
         feed_uri = crawler.settings.get("FEED_URI")
@@ -108,7 +144,11 @@ class AzureDiffPipeline(DiffPipeline):
         )
         super().__init__(crawler, output_format)
 
-    def load_previous_results(self):
+    def load_previous_results(self) -> List[Mapping]:
+        """Loads previously scraped items on Azure Blob Storage
+
+        :return: Previously scraped results
+        """
         max_days_previous = 3
         days_previous = 0
         tz = timezone(self.spider.timezone)
@@ -135,9 +175,15 @@ class AzureDiffPipeline(DiffPipeline):
 
 
 class S3DiffPipeline(DiffPipeline):
-    """S3 backend for comparing previously scraped JSCalendar outputs"""
+    """Implements :class:`DiffPipeline` for AWS S3
+    """
 
-    def __init__(self, crawler, output_format):
+    def __init__(self, crawler: Crawler, output_format: str):
+        """Initialize :class:`S3DiffPipeline` from crawler
+
+        :param crawler: Current Crawler object
+        :param output_format: Only "ocd" is supported
+        """
         import boto3
 
         parsed = urlparse(crawler.settings.get("FEED_URI"))
@@ -153,7 +199,11 @@ class S3DiffPipeline(DiffPipeline):
         )
         super().__init__(crawler, output_format)
 
-    def load_previous_results(self):
+    def load_previous_results(self) -> List[Mapping]:
+        """Load previously scraped items on AWS S3
+
+        :return: Previously scraped results
+        """
         max_days_previous = 3
         days_previous = 0
         tz = timezone(self.spider.timezone)

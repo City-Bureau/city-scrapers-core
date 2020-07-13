@@ -4,6 +4,8 @@ from .constants import CLASSIFICATIONS, STATUSES
 
 
 class Meeting(scrapy.Item):
+    """Main scrapy Item subclass used for handing meetings."""
+
     id = scrapy.Field()
     title = scrapy.Field()
     description = scrapy.Field()

@@ -1,12 +1,21 @@
-from city_scrapers_core.constants import NOT_CLASSIFIED, TENTATIVE
-from city_scrapers_core.decorators import ignore_processed
+from scrapy import Item, Spider
+
+from ..constants import NOT_CLASSIFIED, TENTATIVE
+from ..decorators import ignore_processed
 
 
 class DefaultValuesPipeline:
-    """Sets default values for Meeting items"""
+    """Pipeline for setting default values on scraped Item objects"""
 
     @ignore_processed
-    def process_item(self, item, spider):
+    def process_item(self, item: Item, spider: Spider) -> Item:
+        """Pipeline hook for setting multiple default values for scraped Item objects
+
+        :param item: An individual Item that's been scraped
+        :param spider: Spider passed to the pipeline
+        :return: Item with defaults set
+        """
+
         item.setdefault("description", "")
         item.setdefault("all_day", False)
         item.setdefault("location", {})
