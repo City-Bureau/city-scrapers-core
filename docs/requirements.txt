@@ -1,4 +1,14 @@
-Sphinx
-sphinx_rtd_theme
-sphinx_autodoc_typehints
+https://github.com/opencivicdata/python-legistar-scraper/zipball/bf25cc94980f1608b4cc6766529f1155a273e049#egg=legistar
+jsonschema>=3.0.0a5
+legistar
+pytz
+requests
+scrapy
+black
+flake8
+pytest
+isort
+Sphinx>=3.0
+sphinx-rtd-theme
+sphinx-autodoc-typehints
 docutils
