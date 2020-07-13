@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.py"
+      run: ./.venv/bin/flake8 {staged_files}
+    format:
+      glob: "*.rs"
+      run: ./.venv/bin/isort {staged_files} && ./.venv/bin/black {staged_files} && git add {staged_files}
+
+commit-msg:
+  commands:
+    commitlint:
+      run: commitlint -e -x @commitlint/config-conventional
