@@ -13,9 +13,10 @@ Indices and tables
    :caption: Contents
    :name: contents
 
-   commands
+   constants
    spiders
    items
    pipelines
    extensions
    testing
+   commands
