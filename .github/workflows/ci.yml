@@ -26,13 +26,13 @@ jobs:
       - run: python setup.py develop
 
       - name: Check imports with isort
-        run: isort . --check --diff || exit 1
+        run: isort . --check-only
 
       - name: Check formatting with black
-        run: black ./city_scrapers_core ./tests --check
+        run: black . --check
 
       - name: Lint with flake8
-        run: flake8
+        run: flake8 .
 
       - name: Test with pytest
         run: pytest
