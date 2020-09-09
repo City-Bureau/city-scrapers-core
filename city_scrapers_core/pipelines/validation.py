@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ValidationPipeline:
-    """Pipeline for validating whether a scraper's results match the expected schema.
-    """
+    """Pipeline for validating whether a scraper's results match the expected schema."""
 
     @classmethod
     def from_crawler(cls, crawler: Crawler):

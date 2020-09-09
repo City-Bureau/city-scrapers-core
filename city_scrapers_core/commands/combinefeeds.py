@@ -101,7 +101,9 @@ class Command(ScrapyCommand):
         account_name, account_key = feed_uri[8::].split("@")[0].split(":")
         container = feed_uri.split("@")[1].split("/")[0]
         container_client = ContainerClient(
-            f"{account_name}.blob.core.windows.net", container, credential=account_key,
+            f"{account_name}.blob.core.windows.net",
+            container,
+            credential=account_key,
         )
 
         max_days_previous = 3

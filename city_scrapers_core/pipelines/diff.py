@@ -120,8 +120,7 @@ class DiffPipeline:
 
 
 class AzureDiffPipeline(DiffPipeline):
-    """Implements :class:`DiffPipeline` for Azure Blob Storage
-    """
+    """Implements :class:`DiffPipeline` for Azure Blob Storage"""
 
     def __init__(self, crawler: Crawler, output_format: str):
         """Initialize :class:`AzureDiffPipeline` from a crawler and set account values
@@ -177,8 +176,7 @@ class AzureDiffPipeline(DiffPipeline):
 
 
 class S3DiffPipeline(DiffPipeline):
-    """Implements :class:`DiffPipeline` for AWS S3
-    """
+    """Implements :class:`DiffPipeline` for AWS S3"""
 
     def __init__(self, crawler: Crawler, output_format: str):
         """Initialize :class:`S3DiffPipeline` from crawler
