@@ -51,7 +51,7 @@ class OpenCivicDataPipeline:
                     "entity_id": "",
                 }
             ],
-            "extra": {
+            "extras": {
                 "cityscrapers.org/id": item["id"],
                 "cityscrapers.org/agency": spider.agency,
                 "cityscrapers.org/time_notes": item.get("time_notes", ""),

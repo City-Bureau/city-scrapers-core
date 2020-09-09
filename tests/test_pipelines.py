@@ -61,7 +61,7 @@ def test_diff_ignores_previous_items():
     previous = {
         "_id": "1",
         "start": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S"),
-        "extra": {"cityscrapers.org/id": "1"},
+        "extras": {"cityscrapers.org/id": "1"},
     }
     spider_mock._previous_results = [previous]
     with pytest.raises(DropItem):
@@ -75,11 +75,11 @@ def test_diff_cancels_upcoming_previous_items():
     previous = {
         "_id": "1",
         "start": (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S"),
-        "extra": {"cityscrapers.org/id": "1"},
+        "extras": {"cityscrapers.org/id": "1"},
     }
     spider_mock.previous_results = [previous]
     result = pipeline.process_item(previous, spider_mock)
-    assert result["extra"]["cityscrapers.org/id"] == "1"
+    assert result["extras"]["cityscrapers.org/id"] == "1"
     assert result["status"] == CANCELLED
 
 
