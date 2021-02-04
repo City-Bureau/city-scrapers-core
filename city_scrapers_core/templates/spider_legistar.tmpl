@@ -18,7 +18,7 @@ class $classname(LegistarSpider):
         Change the `_parse_title`, `_parse_start`, etc methods to fit your scraping
         needs.
         """
-        for event, _ in events:
+        for event in events:
             meeting = Meeting(
                 title=event["Name"]["label"],
                 description=self._parse_description(event),

@@ -74,9 +74,6 @@ tutorial/
 venv/
 ENV/
 
-# legistar cache
-_cache/
-
 # src dir from git commit packages in requirements.txt
 src/
 

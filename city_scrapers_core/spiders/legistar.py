@@ -1,9 +1,9 @@
+from collections import defaultdict
 from datetime import datetime
-from typing import Iterable, List, Mapping, Optional, Tuple
-from urllib.parse import urlparse
+from typing import Dict, Iterable, List, Union
+from urllib.parse import parse_qs, urlencode
 
 import scrapy
-from legistar.events import LegistarEventsScraper
 
 from ..items import Meeting
 from .spider import CityScrapersSpider
@@ -15,51 +15,53 @@ class LegistarSpider(CityScrapersSpider):
     """Subclass of :class:`CityScrapersSpider` that handles processing Legistar sites,
     which almost always share the same components and general structure.
 
-    Uses the `Legistar events scraper <https://github.com/opencivicdata/python-legistar-scraper/blob/master/legistar/events.py>`_
-    from the ```python-legistar-scraper`` library <https://github.com/opencivicdata/python-legistar-scraper>`.
-
     Any methods that don't pull the correct values can be replaced.
     """  # noqa
 
     link_types = []
 
-    def parse(self, response: scrapy.http.Response) -> Iterable[Meeting]:
-        """Parse response from the :class:`LegistarEventsScraper`. Ignores the ``scrapy``
-        :class:`Response` which is still requested to be able to hook into ``scrapy``
-        broadly.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Can override since_year to start earlier
+        self.since_year = datetime.now().year - 1
+        self._scraped_urls = set()
+
+    def parse(self, response: scrapy.http.Response) -> Iterable[scrapy.Request]:
+        """Creates initial event requests for each queried year.
 
         :param response: Scrapy response to be ignored
-        :return: Iterable of processed meetings
+        :return: Iterable of ``Request`` objects for event pages
         """
 
-        events = self._call_legistar()
-        return self.parse_legistar(events)
+        secrets = self._parse_secrets(response)
+        current_year = datetime.now().year
+        for year in range(self.since_year, current_year + 1):
+            yield scrapy.Request(
+                response.url,
+                method="POST",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                body=urlencode(
+                    {
+                        **secrets,
+                        "__EVENTTARGET": "ctl00$ContentPlaceHolder1$lstYears",
+                        "ctl00_ContentPlaceHolder1_lstYears_ClientState": f'{{"value":"{year}"}}',  # noqa
+                    }
+                ),
+                callback=self._parse_legistar_events_page,
+                dont_filter=True,
+            )
 
-    def parse_legistar(
-        self, events: Iterable[Tuple[Mapping, Optional[str]]]
-    ) -> Iterable[Meeting]:
+    def parse_legistar(self, events: Iterable[Dict]) -> Iterable[Meeting]:
         """Method to be implemented by Spider classes that will handle the response from
         Legistar. Functions similar to ``parse`` for other Spider classes.
 
-        :param events: Iterable consisting of tuples of a dict-like object of scraped
-                       results from legistar and an agenda URL (if available)
+        :param events: Iterable consisting of a dict of scraped results from Legistar
         :raises NotImplementedError: Must be implemented in subclasses
-        :return: [description]
+        :return: ``Meeting`` objects that will be passed to pipelines, output
         """
-
         raise NotImplementedError("Must implement parse_legistar")
 
-    def _call_legistar(
-        self, since: int = None
-    ) -> Iterable[Tuple[Mapping, Optional[str]]]:
-        les = LegistarEventsScraper()
-        les.BASE_URL = self.base_url
-        les.EVENTSPAGE = f"{self.base_url}/Calendar.aspx"
-        if not since:
-            since = datetime.today().year
-        return les.events(since=since)
-
-    def legistar_start(self, item: Mapping) -> datetime:
+    def legistar_start(self, item: Dict) -> datetime:
         """Pulls the start time from a Legistar item
 
         :param item: Scraped item from Legistar
@@ -76,7 +78,7 @@ class LegistarSpider(CityScrapersSpider):
             except ValueError:
                 return datetime.strptime(start_date, "%m/%d/%Y")
 
-    def legistar_links(self, item: Mapping) -> List[Mapping[str, str]]:
+    def legistar_links(self, item: Dict) -> List[Dict]:
         """Pulls relevant links from a Legistar item
 
         :param item: Scraped item from Legistar
@@ -89,7 +91,7 @@ class LegistarSpider(CityScrapersSpider):
                 links.append({"href": item[link_type]["url"], "title": link_type})
         return links
 
-    def legistar_source(self, item: Mapping) -> str:
+    def legistar_source(self, item: Dict) -> str:
         """Pulls the source URL from a Legistar item. Pulls a specific meeting URL if
         available, otherwise defaults to the general Legistar calendar page.
 
@@ -97,19 +99,106 @@ class LegistarSpider(CityScrapersSpider):
         :return: Source URL
         """
 
-        default_url = f"{self.base_url}/Calendar.aspx"
+        default_url = self.start_urls[0]
         if isinstance(item.get("Name"), dict):
             return item["Name"].get("url", default_url)
         if isinstance(item.get("Meeting Details"), dict):
             return item["Meeting Details"].get("url", default_url)
         return default_url
 
-    @property
-    def base_url(self) -> str:
-        """Property with the Legistar site's base URL
+    def _parse_legistar_events_page(
+        self, response: scrapy.http.Response
+    ) -> Iterable[Union[Meeting, scrapy.http.Request]]:
+        legistar_events = self._parse_legistar_events(response)
+        yield from self.parse_legistar(legistar_events)
+        yield from self._parse_next_page(response)
 
-        :return: Legistar base URL
-        """
+    def _parse_legistar_events(self, response: scrapy.http.Response) -> Iterable[Dict]:
+        events_table = response.css("table.rgMasterTable")[0]
 
-        parsed_url = urlparse(self.start_urls[0])
-        return f"{parsed_url.scheme}://{parsed_url.netloc}"
+        headers = []
+        for header in events_table.css("th[class^='rgHeader']"):
+            header_text = (
+                " ".join(header.css("*::text").extract()).replace("&nbsp;", " ").strip()
+            )
+            header_inputs = header.css("input")
+            if header_text:
+                headers.append(header_text)
+            elif len(header_inputs) > 0:
+                headers.append(header_inputs[0].attrib["value"])
+            else:
+                headers.append(header.css("img")[0].attrib["alt"])
+
+        events = []
+        for row in events_table.css("tr.rgRow, tr.rgAltRow"):
+            try:
+                data = defaultdict(lambda: None)
+                for header, field in zip(headers, row.css("td")):
+                    field_text = (
+                        " ".join(field.css("*::text").extract())
+                        .replace("&nbsp;", " ")
+                        .strip()
+                    )
+                    url = None
+                    if len(field.css("a")) > 0:
+                        link_el = field.css("a")[0]
+                        if "onclick" in link_el.attrib and link_el.attrib[
+                            "onclick"
+                        ].startswith(("radopen('", "window.open", "OpenTelerikWindow")):
+                            url = response.urljoin(
+                                link_el.attrib["onclick"].split("'")[1]
+                            )
+                        elif "href" in link_el.attrib:
+                            url = response.urljoin(link_el.attrib["href"])
+                    if url:
+                        if header in ["", "ics"] and "View.ashx?M=IC" in url:
+                            header = "iCalendar"
+                            value = {"url": url}
+                        else:
+                            value = {"label": field_text, "url": url}
+                    else:
+                        value = field_text
+
+                    data[header] = value
+
+                ical_url = data.get("iCalendar", {}).get("url")
+                if ical_url is None or ical_url in self._scraped_urls:
+                    continue
+                else:
+                    self._scraped_urls.add(ical_url)
+                events.append(dict(data))
+            except Exception:
+                pass
+
+        return events
+
+    def _parse_next_page(
+        self, response: scrapy.http.Response
+    ) -> Iterable[scrapy.Request]:
+        next_page_link = response.css("a.rgCurrentPage + a")
+        if len(next_page_link) == 0:
+            return
+        event_target = next_page_link[0].attrib["href"].split("'")[1]
+        next_page_payload = {
+            **parse_qs(response.request.body.decode("utf-8")),
+            **self._parse_secrets(response),
+            "__EVENTTARGET": event_target,
+        }
+        yield scrapy.Request(
+            response.url,
+            method="POST",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            body=urlencode(next_page_payload),
+            callback=self._parse_legistar_events_page,
+            dont_filter=True,
+        )
+
+    def _parse_secrets(self, response: scrapy.http.Response) -> Dict:
+        secrets = {
+            "__EVENTARGUMENT": None,
+            "__VIEWSTATE": response.css("[name='__VIEWSTATE']")[0].attrib["value"],
+        }
+        event_validation = response.css("[name='__EVENTVALIDATION']")
+        if len(event_validation) > 0:
+            secrets["__EVENTVALIDATION"] = event_validation[0].attrib["value"]
+        return secrets

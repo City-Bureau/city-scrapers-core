@@ -8,10 +8,12 @@ from os.path import abspath, dirname, join
 from urllib.parse import urlparse
 
 import requests
-from legistar.events import LegistarEventsScraper
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.http import HtmlResponse
 from scrapy.utils.template import render_templatefile
+
+from ..spiders import LegistarSpider
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36"  # noqa
 
@@ -37,7 +39,7 @@ class Command(ScrapyCommand):
         test_template = "test.tmpl"
         if "legistar.com" in domain:
             proto = "https" if start_url.startswith("https") else "http"
-            start_url = f"{proto}://{domain}"
+            start_url = f"{proto}://{domain}/Calendar.aspx"
             spider_template = "spider_legistar.tmpl"
             test_template = "test_legistar.tmpl"
             fixture_file = self._gen_legistar_fixtures(name, start_url)
@@ -88,12 +90,10 @@ class Command(ScrapyCommand):
 
     def _gen_legistar_fixtures(self, name, start_url):
         """Creates fixtures from a Legistar response"""
-        events = []
-        les = LegistarEventsScraper()
-        les.BASE_URL = start_url
-        les.EVENTSPAGE = f"{start_url}/Calendar.aspx"
-        for event, _ in les.events(since=datetime.today().year):
-            events.append((dict(event), None))
+        res = requests.get(start_url, headers={"user-agent": USER_AGENT})
+        res = HtmlResponse(start_url, body=res.content)
+        spider = LegistarSpider(name="_fixtures", start_urls=[start_url])
+        events = [e for e in spider._parse_legistar_events(res)]
         fixture_file = join(self.fixtures_dir, f"{name}.json")
         with open(fixture_file, "w", encoding="utf-8") as f:
             json.dump(events, f)
