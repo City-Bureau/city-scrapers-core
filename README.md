@@ -10,8 +10,6 @@ See the [documentation](https://city-scrapers-core.readthedocs.io/) for more det
 ## Installation
 
 ```bash
-# Requires installing legistar separately
-pip install https://github.com/opencivicdata/python-legistar-scraper/tarball/master#egg=legistar
 # To install base package
 pip install city-scrapers-core
 # To install with AWS or Azure dependencies
