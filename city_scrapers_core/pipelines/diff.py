@@ -246,7 +246,7 @@ class GCSDiffPipeline(DiffPipeline):
         :param output_format: Only "ocd" is supported
         """
         from google.cloud import storage
-        
+
         parsed = urlparse(crawler.settings.get("FEED_URI"))
         self.spider = crawler.spider
         self.feed_prefix = crawler.settings.get(
