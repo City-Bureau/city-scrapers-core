@@ -13,7 +13,8 @@ See the [documentation](https://city-scrapers-core.readthedocs.io/) for more det
 ```bash
 # To install base package
 pip install city-scrapers-core
-# To install with AWS or Azure dependencies
+# To install with AWS, Azure, or GCS dependencies
 pip install 'city-scrapers-core[aws]'
 pip install 'city-scrapers-core[azure]'
+pip install 'city-scrapers-core[gcs]'
 ```
