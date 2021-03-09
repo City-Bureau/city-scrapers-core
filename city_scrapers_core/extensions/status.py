@@ -146,3 +146,22 @@ class S3StatusExtension(StatusExtension):
             ContentType="image/svg+xml",
             Key=f"{spider.name}.svg",
         )
+
+
+class GCSStatusExtension(StatusExtension):
+    """Implements :class:`StatusExtension` for Google Cloud Storage"""
+
+    def update_status_svg(self, spider: Spider, svg: str):
+        """Implements writing templated status SVG to Google Cloud Storage
+
+        :param spider: Spider with the status being tracked
+        :param svg: Templated SVG string
+        """
+
+        from google.cloud import storage
+
+        client = storage.Client()
+        bucket = client.bucket(self.crawler.settings.get("CITY_SCRAPERS_STATUS_BUCKET"))
+
+        svg_blob = bucket.blob(f"{spider.name}.svg")
+        svg_blob.upload_from_string(svg.encode(), content_type="image/svg+xml")
