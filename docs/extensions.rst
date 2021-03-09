@@ -11,7 +11,7 @@ Extensions
    :inherited-members:
 
 .. autoclass:: city_scrapers_core.extensions.GCSStatusExtension
-   :inherited-memebers:
+   :inherited-members:
 
 .. autoclass:: city_scrapers_core.extensions.AzureBlobFeedStorage
    :inherited-members:

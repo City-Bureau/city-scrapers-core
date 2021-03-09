@@ -153,6 +153,7 @@ class GCSStatusExtension(StatusExtension):
 
     def update_status_svg(self, spider: Spider, svg: str):
         """Implements writing templated status SVG to Google Cloud Storage
+
         :param spider: Spider with the status being tracked
         :param svg: Templated SVG string
         """

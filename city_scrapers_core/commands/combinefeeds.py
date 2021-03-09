@@ -165,7 +165,8 @@ class Command(ScrapyCommand):
     def combine_gcs(self):
         from google.cloud import storage
 
-        bucket_name = self.settings.get("GCS_BUCKET")
+        parsed = urlparse(self.settings.get("FEED_URI"))
+        bucket_name = parsed.netloc
         feed_prefix = self.settings.get("CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d")
         client = storage.Client()
         bucket = client.bucket(bucket_name)
