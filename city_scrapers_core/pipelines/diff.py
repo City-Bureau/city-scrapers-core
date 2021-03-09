@@ -246,12 +246,13 @@ class GCSDiffPipeline(DiffPipeline):
         :param output_format: Only "ocd" is supported
         """
         from google.cloud import storage
-
+        
+        parsed = urlparse(crawler.settings.get("FEED_URI"))
         self.spider = crawler.spider
         self.feed_prefix = crawler.settings.get(
             "CITY_SCRAPERS_DIFF_FEED_PREFIX", "%Y/%m/%d"
         )
-        self.bucket_name = crawler.settings.get("GCS_BUCKET")
+        self.bucket_name = parsed.netloc
         self.client = storage.Client()
         self.bucket = self.client.bucket(self.bucket_name)
         super().__init__(crawler, output_format)
