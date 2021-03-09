@@ -19,7 +19,7 @@ setup(
     packages=find_packages(),
     package_data={"": ["*"], "city_scrapers_core": ["templates/*"]},
     install_requires=["jsonschema>=3.0.0a5", "pytz", "requests", "scrapy"],
-    tests_requires=["flake8", "pytest", "isort"],
+    tests_require=["flake8", "pytest", "isort"],
     extras_require={
         "aws": ["boto3"],
         "azure": ["azure-storage-blob>=12"],
