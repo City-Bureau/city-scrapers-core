@@ -63,9 +63,10 @@ class EventsCalendarSpider(CityScrapersSpider):
         """Parse classification from categories dict,
         which needs to be specified in the subclass."""
         if item["categories"]:
-            for CLASSIFICATION in self.categories:
-                if item["categories"][0]["slug"] in self.categories[CLASSIFICATION]:
-                    return CLASSIFICATION
+            for category in item["categories"]:
+                for CLASSIFICATION in self.categories:
+                    if category["slug"] in self.categories[CLASSIFICATION]:
+                        return CLASSIFICATION
         return NOT_CLASSIFIED
 
     def _parse_start(self, item: Dict) -> str:
