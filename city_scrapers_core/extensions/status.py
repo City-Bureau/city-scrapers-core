@@ -60,8 +60,8 @@ class StatusExtension:
         self.update_status_svg(self.crawler.spider, svg)
 
     def spider_error(self):
-        """Sets the `has_error` flag on the first spider error and immediately updates the
-        SVG with a "failing" status
+        """Sets the `has_error` flag on the first spider error and immediately updates
+        the SVG with a "failing" status
         """
         self.has_error = True
         svg = self.create_status_svg(self.crawler.spider, FAILING)
