@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from types import NoneType
 from typing import Mapping, Optional
 
 from pytz import timezone
@@ -55,7 +56,10 @@ class CityScrapersSpider(Spider):
             re.sub(r"[^A-Z^a-z^0-9^]+", " ", self._clean_title(item["title"])),
         ).lower()
         item_id = (identifier or "x").replace("/", "-")
-        start_str = item["start"].strftime("%Y%m%d%H%M")
+        if(isinstance(item["start"], NoneType)):
+            start_str = "202200000000"
+        else:
+            start_str = item["start"].strftime("%Y%m%d%H%M")
         return "/".join([self.name, start_str, item_id, underscore_title])
 
     def get_status(self, item: Mapping, text: str = "") -> str:
@@ -74,11 +78,15 @@ class CityScrapersSpider(Spider):
         Generates one of the allowed statuses from constants based on the title and time
         of the meeting
         """
+
         meeting_text = " ".join(
             [item.get("title", ""), item.get("description", ""), text]
         ).lower()
-        if any(word in meeting_text for word in ["cancel", "rescheduled", "postpone"]):
+        if any(word in meeting_text for word in ["cancel", "rescheduled", "postpone", "not"]):
             return CANCELLED
-        if item["start"] < datetime.now():
+        elif(isinstance(item["start"], NoneType)):
             return PASSED
-        return TENTATIVE
+        elif (item["start"] < datetime.now()):
+            return PASSED
+        else:
+            return TENTATIVE
