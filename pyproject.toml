@@ -1,3 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "city-scrapers-core"
+description = "Core functionality for City Scrapers projects"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "City Bureau", email = "documenters@citybureau.org" }
+]
+requires-python = ">=3.8,<4.0"
+dependencies = [
+    "jsonschema>=3.0.0a5",
+    "pytz",
+    "requests",
+    "scrapy"
+]
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Framework :: Scrapy"
+]
+
+[project.urls]
+homepage = "https://github.com/City-Bureau/city-scrapers-core"
+
+[project.optional-dependencies]
+aws = ["boto3"]
+azure = ["azure-storage-blob>=12"]
+gcs = ["google-cloud-storage"]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+    "isort",
+    "build",
+    "twine",
+]
+
+[tool.setuptools.packages.find]
+exclude = ["tests"]
+
+[tool.setuptools.dynamic]
+version = { attr = "city_scrapers_core.__version__" }
+
 [tool.black]
 exclude = '''
 /(
