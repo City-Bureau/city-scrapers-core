@@ -1,8 +1,0 @@
-jsonschema>=3.0.0a5
-pytz
-requests
-scrapy
-black
-flake8
-pytest
-isort
