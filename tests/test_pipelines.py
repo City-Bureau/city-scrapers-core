@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, patch
 
 import pytest
 from scrapy.exceptions import DropItem
@@ -12,7 +12,7 @@ from city_scrapers_core.pipelines import (
     MeetingPipeline,
     ValidationPipeline,
 )
-from city_scrapers_core.spiders import CityScrapersSpider
+from city_scrapers_core.spiders import CityScrapersSpider, LegistarSpider
 
 
 def test_ignore_processed():
@@ -31,15 +31,40 @@ def test_ignore_processed():
 
 def test_meeting_pipeline_sets_end():
     pipeline = MeetingPipeline()
-    meeting = pipeline.process_item(
-        Meeting(title="Test", start=datetime.now()), CityScrapersSpider(name="test")
-    )
+    spider = CityScrapersSpider(name="test")
+    meeting = pipeline.process_item(Meeting(title="Test", start=datetime.now()), spider)
     assert meeting["end"] > meeting["start"]
     now = datetime.now()
-    meeting = pipeline.process_item(
-        Meeting(title="Test", start=now, end=now), CityScrapersSpider(name="test")
-    )
+    meeting = pipeline.process_item(Meeting(title="Test", start=now, end=now), spider)
     assert meeting["end"] > meeting["start"]
+
+
+def test_meeting_pipeline_sets_last_scraped_date():
+    pipeline = MeetingPipeline()
+    spider = CityScrapersSpider(name="test")
+    fixed_time = datetime(2025, 11, 19, 10, 0, 0, tzinfo=timezone.utc)
+
+    with patch("city_scrapers_core.pipelines.meeting.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_time
+        meeting = pipeline.process_item(
+            Meeting(title="Test", start=datetime.now()), spider
+        )
+
+    assert meeting["last_scraped_date"] == "2025-11-19T10:00:00.000000"
+
+
+def test_meeting_pipeline_sets_last_scraped_date_legistar():
+    pipeline = MeetingPipeline()
+    spider = LegistarSpider(name="test")
+    fixed_time = datetime(2025, 11, 19, 10, 0, 0, tzinfo=timezone.utc)
+
+    with patch("city_scrapers_core.pipelines.meeting.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_time
+        meeting = pipeline.process_item(
+            Meeting(title="Test", start=datetime.now()), spider
+        )
+
+    assert meeting["last_scraped_date"] == "2025-11-19T10:00:00.000000"
 
 
 def test_diff_merges_uids():

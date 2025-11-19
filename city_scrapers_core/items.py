@@ -18,6 +18,7 @@ class Meeting(scrapy.Item):
     location = scrapy.Field()
     links = scrapy.Field()
     source = scrapy.Field()
+    last_scraped_date = scrapy.Field()
     jsonschema = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Meeting Item",
@@ -83,6 +84,11 @@ class Meeting(scrapy.Item):
             },
             "links": {"type": "array"},
             "source": {"type": "string", "format": "url"},
+            "last_scraped_date": {
+                "type": "string",
+                "description": "When this meeting was scraped (ISO 8601 format)",
+                "format": "date-time",
+            },
         },
         "required": ["id", "title", "start", "source"],
     }

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from scrapy import Item, Spider
 
@@ -19,6 +19,9 @@ class MeetingPipeline:
         :return: Processed item
         """
         item["title"] = spider._clean_title(item["title"])
+        item["last_scraped_date"] = datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.%f"
+        )
         # Set default end time of two hours later if end time is not present or if it's
         # the same time as the start
         if not item.get("end") or (
