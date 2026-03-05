@@ -37,7 +37,6 @@ class StatusExtension:
     def __init__(self, crawler: Crawler):
         self.crawler = crawler
         self.has_error = False
-        # TODO: Track how many items are scraped on each run.
 
     @classmethod
     def from_crawler(cls, crawler: Crawler):
@@ -52,11 +51,13 @@ class StatusExtension:
 
     def spider_closed(self):
         """Updates the status SVG with a running status unless the spider has
-        encountered an error in which case it exits
+        encountered an error or scraped zero items, in which case it marks as failing.
         """
         if self.has_error:
             return
-        svg = self.create_status_svg(self.crawler.spider, RUNNING)
+        item_count = self.crawler.stats.get_value("item_scraped_count", 0)
+        status = FAILING if item_count == 0 else RUNNING
+        svg = self.create_status_svg(self.crawler.spider, status)
         self.update_status_svg(self.crawler.spider, svg)
 
     def spider_error(self):
