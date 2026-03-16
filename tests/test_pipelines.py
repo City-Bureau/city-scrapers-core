@@ -6,6 +6,7 @@ from scrapy.exceptions import DropItem
 
 from city_scrapers_core.constants import CANCELLED
 from city_scrapers_core.decorators import ignore_processed
+from city_scrapers_core.extensions.status import FAILING, RUNNING, StatusExtension
 from city_scrapers_core.items import Meeting
 from city_scrapers_core.pipelines import (
     DiffPipeline,
@@ -131,3 +132,43 @@ def test_validation_throws_error():
         pipeline.validation_report(spider_mock)
     pipeline.error_count["links"] = 0
     pipeline.validation_report(spider_mock)
+
+
+def _make_status_extension(item_count=0, has_error=False):
+    """Create a StatusExtension with a mocked crawler."""
+    crawler = MagicMock()
+    crawler.stats.get_value.return_value = item_count
+    crawler.spider.name = "test_spider"
+    crawler.spider.timezone = "America/Chicago"
+
+    ext = StatusExtension(crawler)
+    ext.has_error = has_error
+    ext.update_status_svg = MagicMock()
+    return ext
+
+
+def test_status_failing_when_zero_items():
+    ext = _make_status_extension(item_count=0)
+    ext.spider_closed()
+
+    ext.update_status_svg.assert_called_once()
+    svg = ext.update_status_svg.call_args[0][1]
+    assert FAILING in svg
+    assert RUNNING not in svg
+
+
+def test_status_running_when_items_scraped():
+    ext = _make_status_extension(item_count=5)
+    ext.spider_closed()
+
+    ext.update_status_svg.assert_called_once()
+    svg = ext.update_status_svg.call_args[0][1]
+    assert RUNNING in svg
+    assert FAILING not in svg
+
+
+def test_status_failing_on_error_overrides_items():
+    ext = _make_status_extension(item_count=10, has_error=True)
+    ext.spider_closed()
+
+    ext.update_status_svg.assert_not_called()
