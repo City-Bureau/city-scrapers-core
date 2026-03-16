@@ -2,7 +2,7 @@ jsonschema>=3.0.0a5
 pytz
 requests
 scrapy
-black==22.6
+black==24.3.0
 flake8
 pytest
 isort
