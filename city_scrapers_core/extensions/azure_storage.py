@@ -10,7 +10,7 @@ class AzureBlobFeedStorage(BlockingFeedStorage):
                 container, and filename
     """
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, feed_options=None):
         from azure.storage.blob import ContainerClient
 
         container = uri.split("@")[1].split("/")[0]
@@ -21,6 +21,7 @@ class AzureBlobFeedStorage(BlockingFeedStorage):
         self.account_key = account_key
         self.container = container
         self.filename = filename
+        self.feed_options = feed_options
         self.container_client = ContainerClient(
             f"{self.account_name}.blob.core.windows.net",
             self.container,
