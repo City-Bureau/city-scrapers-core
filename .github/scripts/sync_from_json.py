@@ -97,6 +97,8 @@ def validate_artifact(data) -> list[dict]:
                 continue
             if agency is not None and not isinstance(agency, str):
                 continue
+            if agency_name is not None and not isinstance(agency_name, str):
+                continue
             clean_spiders.append(
                 {
                     "name": name,
@@ -115,7 +117,9 @@ def validate_artifact(data) -> list[dict]:
     return cleaned
 
 
-def find_backlog_data_for_agency(agency_name: str, backlog_table) -> dict:
+def find_backlog_data_for_agency(
+    agency_name: str, backlog_table
+) -> dict[str, str | list[str] | None]:
     """Look up an agency in the Backlog table and return its relevant fields.
 
     Returns a dict of values from the Backlog record, including the linked
@@ -198,7 +202,7 @@ def sync_to_airtable(
     Returns a summary: {'created': [...], 'updated': [...]}.
     """
     transfer_values = transfer_values or {}
-    extra_fields: dict[str, object] = {}
+    extra_fields: dict[str, str | list[str]] = {}
 
     program_id = transfer_values.get("program_id")
     if program_id:
@@ -216,7 +220,7 @@ def sync_to_airtable(
     if original_request_id:
         extra_fields[BACKLOG_REQUEST_FIELD_ID] = [original_request_id]
 
-    existing: dict[str, tuple[str, str]] = {}
+    existing: dict[str, str] = {}
     for r in table_records:
         agency = r["fields"].get(AGENCY_FIELD_ID)
         if agency:
@@ -294,10 +298,12 @@ def main():
                 )
                 continue
 
-            transfer_values = find_backlog_data_for_agency(lookup_name, backlog_table)
-            if transfer_values.get("program_id"):
-                break
-
+            candidate_values = find_backlog_data_for_agency(lookup_name, backlog_table)
+            if candidate_values.get("original_request"):
+                if not transfer_values or candidate_values.get("program_id"):
+                    transfer_values = candidate_values
+                if candidate_values.get("program_id"):
+                    break
         """
         A slug record will not be created or updated if none of the spiders in the file
         have an agency that matches a Backlog record. This is a safeguard to prevent
