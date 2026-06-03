@@ -65,13 +65,19 @@ def extract_spiders(source: str) -> list[dict]:
             for element in node.value.elts:
                 if not isinstance(element, ast.Dict):
                     continue
-                entry = {"name": None, "agency": None}
+                entry = {
+                    "name": None,
+                    "agency": None,
+                    "agency_name": None,
+                }
                 for k, v in zip(element.keys, element.values):
                     if not (
                         isinstance(k, ast.Constant) and isinstance(v, ast.Constant)
                     ):
                         continue
-                    if k.value in ("name", "agency") and isinstance(v.value, str):
+                    if k.value in ("name", "agency", "agency_name") and isinstance(
+                        v.value, str
+                    ):
                         entry[k.value] = v.value
                 if entry["name"]:
                     spiders.append(entry)
