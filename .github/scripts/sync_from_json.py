@@ -35,7 +35,7 @@ BACKLOG_REQUEST_FIELD_ID = "fld8lW7mx696sICmF"
 
 # Agency name / Backlog
 BACKLOG_AGENCY_FIELD_ID = "fld30MsEoonhPTP4Z"
-# programs (from Active on Docs.org (automated)) (from Agency name (from Site Issues Tracker)) / Backlog
+# programs (from Active on Docs.org (automated)) (from Agency name (from Site Issues Tracker)) / Backlog  # noqa
 BACKLOG_PROGRAM_LOOKUP_FIELD_ID = "fldvCFqCkYmfDYo0O"
 # Scraper type / Backlog
 BACKLOG_SCRAPER_TYPE_FIELD_ID = "fldGeEh3yoZMDBnC6"
