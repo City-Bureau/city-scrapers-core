@@ -36,7 +36,9 @@ BACKLOG_REQUEST_FIELD_ID = "fld8lW7mx696sICmF"
 # Agency name / Backlog
 BACKLOG_AGENCY_FIELD_ID = "fld30MsEoonhPTP4Z"
 # programs (from Active on Docs.org (automated)) (from Agency name (from Site Issues Tracker)) / Backlog  # noqa
-BACKLOG_PROGRAM_LOOKUP_FIELD_ID = "fldvCFqCkYmfDYo0O"
+BACKLOG_PRIMARY_PROGRAM_LOOKUP_FIELD_ID = "fldvCFqCkYmfDYo0O"
+# Program: From "Existing Agencies" / Backlog  # noqa
+BACKLOG_SECONDARY_PROGRAM_LOOKUP_FIELD_ID = "fldDJcsvXPlvbK5FY"
 # Scraper type / Backlog
 BACKLOG_SCRAPER_TYPE_FIELD_ID = "fldGeEh3yoZMDBnC6"
 # Batch / Backlog
@@ -119,7 +121,7 @@ def validate_artifact(data) -> list[dict]:
 
 def find_backlog_data_for_agency(
     agency_name: str, backlog_table
-) -> dict[str, str | list[str] | None]:
+) -> dict[str, str | None]:
     """Look up an agency in the Backlog table and return its relevant fields.
 
     Returns a dict of values from the Backlog record, including the linked
@@ -138,7 +140,8 @@ def find_backlog_data_for_agency(
     backlog_records = backlog_table.all(
         formula=match({BACKLOG_AGENCY_FIELD_ID: agency_name}),
         fields=[
-            BACKLOG_PROGRAM_LOOKUP_FIELD_ID,
+            BACKLOG_PRIMARY_PROGRAM_LOOKUP_FIELD_ID,
+            BACKLOG_SECONDARY_PROGRAM_LOOKUP_FIELD_ID,
             BACKLOG_SCRAPER_TYPE_FIELD_ID,
             BACKLOG_BATCH_FIELD_ID,
         ],
@@ -161,7 +164,12 @@ def find_backlog_data_for_agency(
     }
 
     # Lookup fields always return a list, even when the source link is single.
-    program_links = fields.get(BACKLOG_PROGRAM_LOOKUP_FIELD_ID) or []
+    program_links = (
+        fields.get(BACKLOG_PRIMARY_PROGRAM_LOOKUP_FIELD_ID)
+        or fields.get(BACKLOG_SECONDARY_PROGRAM_LOOKUP_FIELD_ID)
+        or []
+    )
+
     if not program_links:
         print(f"[INFO] Backlog record for {agency_name!r} has no linked Program")
         return transfer_values
