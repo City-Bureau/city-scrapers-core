@@ -52,7 +52,7 @@ def extract_spiders(source: str) -> list[dict]:
             name = get_str_assign(node.body, "name")
             agency = get_str_assign(node.body, "agency")
             if name:
-                spiders.append({"name": name, "agency": agency})
+                spiders.append({"name": name, "agency": agency, "is_main": True})
 
         elif (
             isinstance(node, ast.Assign)
@@ -69,6 +69,7 @@ def extract_spiders(source: str) -> list[dict]:
                     "name": None,
                     "agency": None,
                     "agency_name": None,
+                    "is_main": False,
                 }
                 for k, v in zip(element.keys, element.values):
                     if not (
@@ -79,6 +80,8 @@ def extract_spiders(source: str) -> list[dict]:
                         v.value, str
                     ):
                         entry[k.value] = v.value
+                    elif k.value == "is_main" and isinstance(v.value, bool):
+                        entry["is_main"] = v.value
                 if entry["name"]:
                     spiders.append(entry)
 
