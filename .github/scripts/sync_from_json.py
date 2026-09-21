@@ -153,7 +153,7 @@ def validate_artifact(data) -> list[dict]:
                     "name": name,
                     "agency": agency,
                     "agency_name": agency_name,
-                    "is_main": is_main
+                    "is_main": is_main,
                 }
             )
 
@@ -235,8 +235,12 @@ def find_backlog_data_for_agency(
 
 
 def sync_to_airtable(
-    spiders: list[dict], table, table_records, transfer_values=None,
-    main_scraper_value: str = "", sub_scraper_value: str = "",
+    spiders: list[dict],
+    table,
+    table_records,
+    transfer_values=None,
+    main_scraper_value: str = "",
+    sub_scraper_value: str = "",
 ) -> dict:
     """
     Sync spiders to Airtable. Each spider becomes one record in the Slugs
@@ -385,8 +389,9 @@ def main():
 
             candidate_values = find_backlog_data_for_agency(lookup_name, backlog_table)
             if candidate_values.get("original_request"):
-                # Prefer a candidate with a program_id; otherwise take the first match we
-                # find. Stop searching as soon as we have a program_id.
+                # Prefer a candidate with a program_id; otherwise take
+                # the first match we find. Stop searching as soon as we
+                # have a program_id.
                 if not transfer_values or candidate_values.get("program_id"):
                     transfer_values = candidate_values
                 if candidate_values.get("program_id"):
@@ -405,7 +410,11 @@ def main():
             continue
 
         result = sync_to_airtable(
-            spiders, slugs_table, slugs_table_records, transfer_values, main_scraper_value,
+            spiders,
+            slugs_table,
+            slugs_table_records,
+            transfer_values,
+            main_scraper_value,
             sub_scraper_value,
         )
         for key in overall:
