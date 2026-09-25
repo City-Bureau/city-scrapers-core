@@ -20,7 +20,7 @@ Output JSON shape:
             {
                 "path": "city_scrapers/spiders/foo.py",
                 "spiders": [
-                    {"name": "factory_spider", "agency": "...", "agency_name": "...", "is_main": false},
+                    {"name": "factory_spider", "agency": "...", "agency_name": "...", "is_main": false},  # noqa
                     ...
                 ]
             },
