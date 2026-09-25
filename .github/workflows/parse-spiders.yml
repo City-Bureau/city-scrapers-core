@@ -10,7 +10,7 @@ on:
       core-ref:
         required: false
         type: string
-        default: 'main'
+        default: "main"
 
 jobs:
   parse:
@@ -39,15 +39,16 @@ jobs:
         if: steps.changed.outputs.any_changed == 'true'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Extract spiders to JSON
         if: steps.changed.outputs.any_changed == 'true'
+        env:
+          CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
         run: |
           mkdir -p artifact
           python .city-scrapers-core/.github/scripts/spiders_to_json.py \
-            artifact/spiders.json \
-            ${{ steps.changed.outputs.all_changed_files }}
+            artifact/spiders.json
 
       - name: Upload artifact
         if: steps.changed.outputs.any_changed == 'true'

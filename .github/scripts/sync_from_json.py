@@ -88,10 +88,11 @@ def resolve_scraper_type_options(slugs_table) -> tuple[str, str]:
         if len(matches) == 1:
             return matches[0]
         print(
-            f"[WARN] Multiple Scraper Type options contain {marker!r}: "
-            f"{matches}. Falling back to the first match ({matches[0]!r})."
+            f"[WARN] Multiple Scraper Type options contain {marker!r}: {matches}. "
+            "Scraper type will not be written for affected records to avoid "
+            "writing the wrong value. Fix by renaming options or narrowing the marker."
         )
-        return matches[0]
+        return ""
 
     return find_single(MAIN_SCRAPER_MARKER), find_single(SUB_SCRAPER_MARKER)
 
