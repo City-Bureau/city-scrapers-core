@@ -51,6 +51,51 @@ MAX_SPIDERS_PER_FILE = 200  # spider_configs lists shouldn't go above this
 # Airtable record ID format constraint
 AIRTABLE_RECORD_ID = re.compile(r"^rec[A-Za-z0-9]{14}$")
 
+# Semantic markers — the code looks for options containing these substrings,
+# case-insensitively. Keeps working across cosmetic label edits like
+# "Main scraper / scraper to invoice" → "Main scraper (primary)".
+MAIN_SCRAPER_MARKER = "main scraper"
+SUB_SCRAPER_MARKER = "subscraper"
+
+
+def resolve_scraper_type_options(slugs_table) -> tuple[str, str]:
+    """
+    Find the exact scraper-type option values that mean 'main' and 'sub'.
+
+    Reads the Slugs table schema, finds the Scraper Type field's allowed
+    options, and matches them against the two semantic markers. Returns
+    (main_value, sub_value). Warns if either can't be resolved uniquely.
+    """
+    schema = slugs_table.schema()
+    field = next(
+        (f for f in schema.fields if f.id == SCRAPER_TYPE_FIELD_ID),
+        None,
+    )
+    if field is None:
+        sys.exit(f"[ERROR] Scraper type field {SCRAPER_TYPE_FIELD_ID} not found")
+
+    # Single-select and multi-select fields expose their options here.
+    options = [choice.name for choice in field.options.choices]
+
+    def find_single(marker: str) -> str:
+        matches = [opt for opt in options if marker in opt.lower()]
+        if not matches:
+            print(
+                f"[WARN] No Scraper Type option contains {marker!r}. "
+                f"Available: {options}"
+            )
+            return ""
+        if len(matches) == 1:
+            return matches[0]
+        print(
+            f"[WARN] Multiple Scraper Type options contain {marker!r}: {matches}. "
+            "Scraper type will not be written for affected records to avoid "
+            "writing the wrong value. Fix by renaming options or narrowing the marker."
+        )
+        return ""
+
+    return find_single(MAIN_SCRAPER_MARKER), find_single(SUB_SCRAPER_MARKER)
+
 
 def is_valid_record_id(value) -> bool:
     return isinstance(value, str) and bool(AIRTABLE_RECORD_ID.match(value))
@@ -95,17 +140,21 @@ def validate_artifact(data) -> list[dict]:
             name = s.get("name")
             agency = s.get("agency")
             agency_name = s.get("agency_name")
+            is_main = s.get("is_main", False)
             if not isinstance(name, str) or not name:
                 continue
             if agency is not None and not isinstance(agency, str):
                 continue
             if agency_name is not None and not isinstance(agency_name, str):
                 continue
+            if not isinstance(is_main, bool):
+                is_main = False
             clean_spiders.append(
                 {
                     "name": name,
                     "agency": agency,
                     "agency_name": agency_name,
+                    "is_main": is_main,
                 }
             )
 
@@ -187,25 +236,38 @@ def find_backlog_data_for_agency(
 
 
 def sync_to_airtable(
-    spiders: list[dict], table, table_records, transfer_values=None
+    spiders: list[dict],
+    table,
+    table_records,
+    transfer_values=None,
+    main_scraper_value: str = "",
+    sub_scraper_value: str = "",
 ) -> dict:
     """
-    Sync spiders to Airtable, keyed on agency name.
-    Agency name is considered the source of truth for
-    matching records.
+    Sync spiders to Airtable. Each spider becomes one record in the Slugs
+    table, keyed on agency name (the source of truth for matching).
 
-    Workflow for each spider:
-      - If the agency is already in the table: update the slug and any extra fields.
-      - If the agency is not in the table: create a new record.
+    For each spider:
+    - If its agency already exists in the table: update the record's slug
+        and overwrite every extra field (program, batch, scraper type, backlog
+        request) with the values from `transfer_values`. Existing extras are
+        replaced unconditionally, not merged.
+    - If its agency isn't in the table: create a new record with the slug,
+        agency, and the same extra fields.
 
-    Note:
-    If the agency name for the same slug changes, a new record
-    will be created and the table will end up with multiple
-    records for the same slug but different agency names.
-    There would have to be some manual cleanup to remove the
-    old record with the outdated slug, but this is a safer
-    approach than accidentally overwriting an existing record
-    with a new slug that belongs to a different agency.
+    Scraper type is per-spider: if exactly one spider is marked `is_main`,
+    that one gets `main_scraper_value`, the rest get `sub_scraper_value`.
+    If zero or multiple spiders are marked, all get `main_scraper_value` as
+    a safe default (better to over-label as main than mis-label a real main
+    scraper as a sub).
+
+    Note on agency renames:
+    Because matching is keyed on agency name, renaming an existing spider's
+    agency in the source produces a new record rather than updating the old
+    one — the old record stays in the table with its outdated agency until
+    cleaned up manually. This is intentional: the alternative (matching on
+    slug and overwriting agency) risks silently reassigning a record to the
+    wrong agency, which is harder to detect than a duplicate.
 
     Returns a summary: {'created': [...], 'updated': [...]}.
     """
@@ -220,13 +282,25 @@ def sync_to_airtable(
     if batch:
         extra_fields[BATCH_FIELD_ID] = batch
 
-    scraper_type = transfer_values.get("scraper_type")
-    if scraper_type:
-        extra_fields[SCRAPER_TYPE_FIELD_ID] = scraper_type
-
     original_request_id = transfer_values.get("original_request")
     if original_request_id:
         extra_fields[BACKLOG_REQUEST_FIELD_ID] = [original_request_id]
+
+    main_scraper_type = transfer_values.get("scraper_type") or main_scraper_value
+    main_count = sum(1 for s in spiders if s.get("is_main"))
+    single_main = main_count == 1
+
+    if main_scraper_type and not single_main:
+        if main_count == 0:
+            print(
+                "[WARN] No spider marked is_main=True in this batch; "
+                "all spiders will be labeled as main scraper."
+            )
+        else:
+            print(
+                f"[WARN] {main_count} spiders marked is_main=True in this batch; "
+                "all spiders will be labeled as main scraper."
+            )
 
     existing: dict[str, str] = {}
     for r in table_records:
@@ -244,12 +318,18 @@ def sync_to_airtable(
             print(f"[INFO] skipping spider '{slug}' - no agency name")
             continue
 
+        per_spider_fields = dict(extra_fields)
+        if main_scraper_type:
+            is_sub = single_main and not spider.get("is_main")
+            value = sub_scraper_value if is_sub else main_scraper_type
+            if value:
+                per_spider_fields[SCRAPER_TYPE_FIELD_ID] = value
+
         if agency in existing:
-            record_id = existing[agency]
-            fields = {SLUG_FIELD_ID: slug, **extra_fields}
-            to_update.append({"id": record_id, "fields": fields})
+            fields = {SLUG_FIELD_ID: slug, **per_spider_fields}
+            to_update.append({"id": existing[agency], "fields": fields})
         else:
-            fields = {SLUG_FIELD_ID: slug, AGENCY_FIELD_ID: agency, **extra_fields}
+            fields = {SLUG_FIELD_ID: slug, AGENCY_FIELD_ID: agency, **per_spider_fields}
             to_create.append(fields)
             existing[agency] = ""
 
@@ -285,6 +365,8 @@ def main():
     slugs_table = api.table(base_id, slugs_table_name)
     backlog_table = api.table(base_id, backlog_table_name)
 
+    main_scraper_value, sub_scraper_value = resolve_scraper_type_options(slugs_table)
+
     slugs_table_records = slugs_table.all(
         fields=[SLUG_FIELD_ID, AGENCY_FIELD_ID],
         use_field_ids=True,
@@ -308,6 +390,9 @@ def main():
 
             candidate_values = find_backlog_data_for_agency(lookup_name, backlog_table)
             if candidate_values.get("original_request"):
+                # Prefer a candidate with a program_id; otherwise take
+                # the first match we find. Stop searching as soon as we
+                # have a program_id.
                 if not transfer_values or candidate_values.get("program_id"):
                     transfer_values = candidate_values
                 if candidate_values.get("program_id"):
@@ -326,7 +411,12 @@ def main():
             continue
 
         result = sync_to_airtable(
-            spiders, slugs_table, slugs_table_records, transfer_values
+            spiders,
+            slugs_table,
+            slugs_table_records,
+            transfer_values,
+            main_scraper_value,
+            sub_scraper_value,
         )
         for key in overall:
             overall[key].extend(result[key])
