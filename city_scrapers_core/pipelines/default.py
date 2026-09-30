@@ -18,6 +18,7 @@ class DefaultValuesPipeline:
 
         item.setdefault("description", "")
         item.setdefault("all_day", False)
+        item.setdefault("closed_to_public", False)
         item.setdefault("location", {})
         item.setdefault("links", [])
         item.setdefault("time_notes", "")
