@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added an optional `closed_to_public` boolean to `Meeting` for closed or executive sessions. It defaults to `False` and is exported as `extras["cityscrapers/closed_to_public"]` in the Open Civic Data output
+
 ## [v0.10.0](https://github.com/City-Bureau/city-scrapers-core/releases/tag/v0.10.0)
 
 - Added support for Google Cloud Storage

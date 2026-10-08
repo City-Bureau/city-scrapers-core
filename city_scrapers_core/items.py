@@ -14,6 +14,7 @@ class Meeting(scrapy.Item):
     start = scrapy.Field()
     end = scrapy.Field()
     all_day = scrapy.Field()
+    closed_to_public = scrapy.Field()
     time_notes = scrapy.Field()
     location = scrapy.Field()
     links = scrapy.Field()
@@ -52,6 +53,10 @@ class Meeting(scrapy.Item):
             "all_day": {
                 "type": "boolean",
                 "description": "Whether the meeting occurs for the entire day",
+            },
+            "closed_to_public": {
+                "type": "boolean",
+                "description": "Whether the public cannot attend the meeting, e.g. a closed or executive session",  # noqa
             },
             "status": {
                 "type": "string",

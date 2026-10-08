@@ -56,6 +56,7 @@ class OpenCivicDataPipeline:
                 "cityscrapers/agency": spider.agency,
                 "cityscrapers/time_notes": item.get("time_notes", ""),
                 "cityscrapers/address": item["location"]["address"],
+                "cityscrapers/closed_to_public": item.get("closed_to_public") is True,
             },
         }
 

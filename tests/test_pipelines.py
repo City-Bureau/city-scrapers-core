@@ -9,8 +9,10 @@ from city_scrapers_core.decorators import ignore_processed
 from city_scrapers_core.extensions.status import FAILING, RUNNING, StatusExtension
 from city_scrapers_core.items import Meeting
 from city_scrapers_core.pipelines import (
+    DefaultValuesPipeline,
     DiffPipeline,
     MeetingPipeline,
+    OpenCivicDataPipeline,
     ValidationPipeline,
 )
 from city_scrapers_core.spiders import CityScrapersSpider
@@ -41,6 +43,58 @@ def test_meeting_pipeline_sets_end():
         Meeting(title="Test", start=now, end=now), CityScrapersSpider(name="test")
     )
     assert meeting["end"] > meeting["start"]
+
+
+def _ocd_meeting(**kwargs):
+    now = datetime.now()
+    return Meeting(
+        id="test_1",
+        title="Test",
+        description="",
+        classification="Board",
+        status="tentative",
+        start=now,
+        end=now + timedelta(hours=1),
+        all_day=False,
+        time_notes="",
+        location={"name": "", "address": ""},
+        links=[],
+        source="https://example.com",
+        **kwargs,
+    )
+
+
+def test_default_values_sets_closed_to_public_false():
+    item = DefaultValuesPipeline().process_item(Meeting(title="Test"), None)
+    assert item["closed_to_public"] is False
+
+
+def test_ocd_includes_closed_to_public():
+    spider = CityScrapersSpider(name="test", timezone="America/New_York")
+    spider.agency = "Test Agency"
+    pipeline = OpenCivicDataPipeline()
+    closed = pipeline.process_item(_ocd_meeting(closed_to_public=True), spider)
+    assert closed["extras"]["cityscrapers/closed_to_public"] is True
+    # Scrapers that never set the field still export an explicit False
+    open_meeting = pipeline.process_item(_ocd_meeting(), spider)
+    assert open_meeting["extras"]["cityscrapers/closed_to_public"] is False
+
+
+def test_ocd_exports_non_bool_closed_to_public_as_open():
+    spider = CityScrapersSpider(name="test", timezone="America/New_York")
+    spider.agency = "Test Agency"
+    item = OpenCivicDataPipeline().process_item(
+        _ocd_meeting(closed_to_public="false"), spider
+    )
+    assert item["extras"]["cityscrapers/closed_to_public"] is False
+
+
+def test_validation_counts_non_bool_closed_to_public():
+    pipeline = ValidationPipeline()
+    pipeline.open_spider(None)
+    pipeline.process_item(_ocd_meeting(closed_to_public=True), None)
+    pipeline.process_item(_ocd_meeting(closed_to_public="false"), None)
+    assert pipeline.error_count["closed_to_public"] == 1
 
 
 def test_diff_merges_uids():
