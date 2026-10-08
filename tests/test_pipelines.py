@@ -80,6 +80,23 @@ def test_ocd_includes_closed_to_public():
     assert open_meeting["extras"]["cityscrapers/closed_to_public"] is False
 
 
+def test_ocd_exports_non_bool_closed_to_public_as_open():
+    spider = CityScrapersSpider(name="test", timezone="America/New_York")
+    spider.agency = "Test Agency"
+    item = OpenCivicDataPipeline().process_item(
+        _ocd_meeting(closed_to_public="false"), spider
+    )
+    assert item["extras"]["cityscrapers/closed_to_public"] is False
+
+
+def test_validation_counts_non_bool_closed_to_public():
+    pipeline = ValidationPipeline()
+    pipeline.open_spider(None)
+    pipeline.process_item(_ocd_meeting(closed_to_public=True), None)
+    pipeline.process_item(_ocd_meeting(closed_to_public="false"), None)
+    assert pipeline.error_count["closed_to_public"] == 1
+
+
 def test_diff_merges_uids():
     spider_mock = MagicMock()
     spider_mock._previous_map = {"1": "TEST", "2": "TEST"}
