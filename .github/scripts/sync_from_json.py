@@ -13,7 +13,6 @@ from pathlib import Path
 
 from decouple import config
 from pyairtable import Api
-from pyairtable.formulas import match
 
 """
 AirTable field IDs.
