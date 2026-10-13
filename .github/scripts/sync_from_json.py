@@ -13,7 +13,6 @@ from pathlib import Path
 
 from decouple import config
 from pyairtable import Api
-from pyairtable.formulas import match
 
 """
 AirTable field IDs.
@@ -168,16 +167,25 @@ def validate_artifact(data) -> list[dict]:
     return cleaned
 
 
+def _quote(s: str) -> str:
+    """Airtable formula string literal — escape quotes and wrap."""
+    return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'"
+
+
 def find_backlog_data_for_agency(
     agency_name: str, backlog_table
 ) -> dict[str, str | None]:
-    """Look up an agency in the Backlog table and return its relevant fields.
+    """Look up an agency in the Backlog table, restricted to records whose
+    Scraper Type contains "main scraper".
 
-    Returns a dict of values from the Backlog record, including the linked
-    Program record ID under the key 'program_id'. If the agency isn't in
-    Backlog, or the Program link is missing/invalid, 'program_id' is None.
-    Other fields are returned with type-appropriate empty defaults so callers
-    don't need to None-check each one.
+    The Backlog Agency name field is a lookup, so its value is an array of
+    strings (sometimes with stray whitespace). The formula normalizes both
+    sides — joining the array, trimming whitespace, lowercasing — so matching
+    is tolerant of those shape and formatting quirks.
+
+    Returns a dict of values from the matched Backlog record, including the
+    linked Program record ID under 'program_id'. If no record matches, or
+    the Program link is missing/invalid, 'program_id' is None.
     """
     empty = {
         "original_request": "",
@@ -186,8 +194,22 @@ def find_backlog_data_for_agency(
         "program_id": None,
     }
 
+    # Backlog "Agency name" is a lookup field returning an array; join it to
+    # a string, then trim and lowercase both sides for a tolerant comparison.
+    # The scraper-type check uses FIND so cosmetic label changes don't break
+    # it ("Main scraper / scraper to invoice" and "Main scraper (primary)"
+    # both contain "main scraper").
+    agency_literal = _quote(agency_name.strip().lower())
+    marker_literal = _quote(MAIN_SCRAPER_MARKER)
+    formula = (
+        f"AND("
+        f"TRIM(LOWER(ARRAYJOIN({{{BACKLOG_AGENCY_FIELD_ID}}}, ', ')))={agency_literal},"
+        f"FIND({marker_literal}, LOWER({{{BACKLOG_SCRAPER_TYPE_FIELD_ID}}}))"
+        f")"
+    )
+
     backlog_records = backlog_table.all(
-        formula=match({BACKLOG_AGENCY_FIELD_ID: agency_name}),
+        formula=formula,
         fields=[
             BACKLOG_PRIMARY_PROGRAM_LOOKUP_FIELD_ID,
             BACKLOG_SECONDARY_PROGRAM_LOOKUP_FIELD_ID,
@@ -199,7 +221,7 @@ def find_backlog_data_for_agency(
     )
 
     if not backlog_records:
-        print(f"[INFO] No Backlog record found for agency {agency_name!r}")
+        print(f"[INFO] No main-scraper Backlog record for agency {agency_name!r}")
         return empty
 
     record = backlog_records[0]
@@ -212,7 +234,6 @@ def find_backlog_data_for_agency(
         "program_id": None,
     }
 
-    # Lookup fields always return a list, even when the source link is single.
     program_links = (
         fields.get(BACKLOG_PRIMARY_PROGRAM_LOOKUP_FIELD_ID)
         or fields.get(BACKLOG_SECONDARY_PROGRAM_LOOKUP_FIELD_ID)
@@ -379,7 +400,11 @@ def main():
             continue
 
         transfer_values = {}
-        for spider in spiders:
+        # Try the is_main spider first — it's the one meant to match a main-scraper
+        # Backlog record. If none is marked, or the marked one doesn't match, fall
+        # through to the other spiders in order.
+        ordered_spiders = sorted(spiders, key=lambda s: not s.get("is_main"))
+        for spider in ordered_spiders:
             lookup_name = spider.get("agency_name") or spider.get("agency")
             if not lookup_name:
                 print(
@@ -390,9 +415,8 @@ def main():
 
             candidate_values = find_backlog_data_for_agency(lookup_name, backlog_table)
             if candidate_values.get("original_request"):
-                # Prefer a candidate with a program_id; otherwise take
-                # the first match we find. Stop searching as soon as we
-                # have a program_id.
+                # Prefer a candidate with a program_id; otherwise take the first
+                # match we find. Stop searching as soon as we have a program_id.
                 if not transfer_values or candidate_values.get("program_id"):
                     transfer_values = candidate_values
                 if candidate_values.get("program_id"):
