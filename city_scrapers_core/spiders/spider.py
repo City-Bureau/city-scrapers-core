@@ -74,9 +74,16 @@ class CityScrapersSpider(Spider):
         Generates one of the allowed statuses from constants based on the title and time
         of the meeting
         """
-        meeting_text = " ".join(
-            [item.get("title", ""), item.get("description", ""), text]
-        ).lower()
+        # A title like "Rescheduled from <date>" or "Originally Scheduled for <date>"
+        # marks the new, active meeting, so those phrases aren't a cancel signal.
+        # Bare "rescheduled" or "postponed" still means cancelled.
+        title = re.sub(
+            r"\b(rescheduled|moved)\s+from\b|\boriginally\s+scheduled\b",
+            "",
+            item.get("title", ""),
+            flags=re.IGNORECASE,
+        )
+        meeting_text = " ".join([title, item.get("description", ""), text]).lower()
         if any(word in meeting_text for word in ["cancel", "rescheduled", "postpone"]):
             return CANCELLED
         if item["start"] < datetime.now():
