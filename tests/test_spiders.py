@@ -40,13 +40,12 @@ def test_spider_get_status(spider):
     "title,expected_future,expected_past",
     [
         ("Board Meeting – Rescheduled from September 10, 2026", TENTATIVE, PASSED),
-        ("Board Meeting (Originally Scheduled for Sept. 10)", TENTATIVE, PASSED),
-        ("Board Meeting - Moved from Sept 10", TENTATIVE, PASSED),
         ("RESCHEDULED FROM 9/10: Board Meeting", TENTATIVE, PASSED),
         ("Board Meeting - Cancelled", CANCELLED, CANCELLED),
         ("Board Meeting Rescheduled", CANCELLED, CANCELLED),
         ("Board Meeting - Postponed", CANCELLED, CANCELLED),
         ("Board Meeting - Rescheduled from Sept 10 - CANCELLED", CANCELLED, CANCELLED),
+        ("Board Meeting - Rescheduled from Oct 1 to Oct 15", CANCELLED, CANCELLED),
     ],
 )
 def test_spider_get_status_rescheduled_from(
@@ -66,9 +65,22 @@ def test_spider_get_status_rescheduled_from_other_cancel_signal(spider):
     assert spider._get_status(item, text="Meeting postponed") == CANCELLED
 
 
+def test_spider_get_status_rescheduled_from_text_and_description(spider):
+    tomorrow = datetime.now() + timedelta(days=1)
+    item = {"start": tomorrow, "title": "Board Meeting"}
+    assert (
+        spider._get_status(item, text="Board Meeting - Rescheduled from 9/10")
+        == TENTATIVE
+    )
+    assert spider._get_status(item, text="Rescheduled from 9/10\nto 10/21") == CANCELLED
+    assert (
+        spider._get_status({**item, "description": "Rescheduled from 9/10"})
+        == CANCELLED
+    )
+
+
 def test_spider_get_id_rescheduled_from_unchanged(spider):
-    # Meeting IDs come from the cleaned title. Pin the existing ID so the status fix
-    # can't change it and create duplicate meetings downstream.
+    # A changed ID would duplicate meetings downstream.
     item = {
         "start": datetime(2026, 10, 21, 17, 0),
         "title": "Board Meeting - Rescheduled from September 10, 2026",

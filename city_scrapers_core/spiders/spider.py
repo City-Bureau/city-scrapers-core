@@ -7,6 +7,10 @@ from scrapy import Spider
 
 from ..constants import CANCELLED, PASSED, TENTATIVE
 
+_RESCHEDULED_FROM_RE = re.compile(
+    r"\brescheduled\s+from\b(?!.*\bto\b)", re.IGNORECASE | re.DOTALL
+)
+
 
 class CityScrapersSpider(Spider):
     """Base Spider class for City Scrapers projects. Provides a few utilities for common
@@ -74,16 +78,15 @@ class CityScrapersSpider(Spider):
         Generates one of the allowed statuses from constants based on the title and time
         of the meeting
         """
-        # A title like "Rescheduled from <date>" or "Originally Scheduled for <date>"
-        # marks the new, active meeting, so those phrases aren't a cancel signal.
-        # Bare "rescheduled" or "postponed" still means cancelled.
-        title = re.sub(
-            r"\b(rescheduled|moved)\s+from\b|\boriginally\s+scheduled\b",
-            "",
-            item.get("title", ""),
-            flags=re.IGNORECASE,
-        )
-        meeting_text = " ".join([title, item.get("description", ""), text]).lower()
+        # "Rescheduled from <date>" marks the new, active meeting; "from X to Y" is
+        # ambiguous, so it stays a cancel signal. Many spiders pass the title as text.
+        meeting_text = " ".join(
+            [
+                _RESCHEDULED_FROM_RE.sub("", item.get("title", "")),
+                item.get("description", ""),
+                _RESCHEDULED_FROM_RE.sub("", text),
+            ]
+        ).lower()
         if any(word in meeting_text for word in ["cancel", "rescheduled", "postpone"]):
             return CANCELLED
         if item["start"] < datetime.now():
