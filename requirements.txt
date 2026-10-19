@@ -4,5 +4,6 @@ requests
 scrapy
 black==22.6
 flake8
+freezegun
 pytest
 isort
