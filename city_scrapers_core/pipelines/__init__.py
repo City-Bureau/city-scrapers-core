@@ -1,6 +1,7 @@
 from .default import DefaultValuesPipeline  # noqa
 from .diff import (  # noqa
     AzureDiffPipeline,
+    DiffGuardTripped,
     DiffPipeline,
     GCSDiffPipeline,
     S3DiffPipeline,
@@ -12,6 +13,7 @@ from .validation import ValidationPipeline  # noqa
 __all__ = [
     "DefaultValuesPipeline",
     "DiffPipeline",
+    "DiffGuardTripped",
     "AzureDiffPipeline",
     "S3DiffPipeline",
     "GCSDiffPipeline",
