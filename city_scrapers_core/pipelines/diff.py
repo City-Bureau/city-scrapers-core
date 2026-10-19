@@ -311,6 +311,9 @@ class DiffPipeline:
         logger.error(message)
         try:
             self.crawler.stats.set_value("diff_guard/tripped", 1)
+        except Exception:
+            logger.exception("Could not set diff guard stat for %s", spider.name)
+        try:
             try:
                 raise DiffGuardTripped(message)
             except DiffGuardTripped:

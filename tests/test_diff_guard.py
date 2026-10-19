@@ -378,17 +378,56 @@ def test_guard_check_failure_fails_safe(caplog, monkeypatch):
     assert previous_outputs(outputs) == {p["_id"]: p for p in UPCOMING[1:] + PAST}
 
 
+class BrokenStats:
+    def set_value(self, *args, **kwargs):
+        raise RuntimeError("stats broke")
+
+
 @freeze_time(NOW)
-def test_reporting_failure_does_not_crash_the_run(caplog):
-    pipeline, outputs, _ = make_pipeline(UPCOMING)
+def test_stats_failure_still_sends_spider_error(caplog):
+    pipeline, outputs, errors = make_pipeline(UPCOMING)
+    pipeline.crawler.stats = BrokenStats()
+    idle_until_injected(pipeline)
+    assert pipeline.guard_tripped
+    assert outputs == UPCOMING
+    assert "Could not set diff guard stat" in caplog.text
+    assert len(errors) == 1
+    assert isinstance(errors[0].value, DiffGuardTripped)
+
+
+@freeze_time(NOW)
+def test_spider_error_receiver_failure_does_not_crash_the_run():
+    pipeline, outputs, errors = make_pipeline(UPCOMING)
+    called = []
 
     def broken_receiver(failure):
+        called.append(failure)
         raise RuntimeError("receiver broke")
 
     pipeline.crawler.signals.connect(
         broken_receiver, signal=signals.spider_error, weak=False
     )
-    pipeline.crawler.stats = None  # stats.set_value raises
+    idle_until_injected(pipeline)
+    assert pipeline.guard_tripped
+    assert outputs == UPCOMING
+    # The failing receiver was called and the other receiver still got the error
+    assert len(called) == 1
+    assert len(errors) == 1
+    assert pipeline.crawler.stats.get_value("diff_guard/tripped") == 1
+
+
+@freeze_time(NOW)
+def test_signal_send_failure_does_not_crash_the_run(caplog, monkeypatch):
+    pipeline, outputs, _ = make_pipeline(UPCOMING)
+
+    send = pipeline.crawler.signals.send_catch_log
+
+    def broken_send(signal, **kwargs):
+        if signal is signals.spider_error:
+            raise RuntimeError("signals broke")
+        return send(signal, **kwargs)
+
+    monkeypatch.setattr(pipeline.crawler.signals, "send_catch_log", broken_send)
     idle_until_injected(pipeline)
     assert pipeline.guard_tripped
     assert outputs == UPCOMING
