@@ -42,6 +42,8 @@ BACKLOG_SECONDARY_PROGRAM_LOOKUP_FIELD_ID = "fldDJcsvXPlvbK5FY"
 BACKLOG_SCRAPER_TYPE_FIELD_ID = "fldGeEh3yoZMDBnC6"
 # Batch / Backlog
 BACKLOG_BATCH_FIELD_ID = "fldfdd7z3jt1YP3DM"
+# Date created / Backlog
+BACKLOG_DATE_CREATED_FIELD_ID = "fldJOYlQD497HoOBI"
 
 # Validation limits
 MAX_FILES = 10  # PR can't touch more than this many spider files
@@ -216,6 +218,7 @@ def find_backlog_data_for_agency(
             BACKLOG_SCRAPER_TYPE_FIELD_ID,
             BACKLOG_BATCH_FIELD_ID,
         ],
+        sort=[f"-{BACKLOG_DATE_CREATED_FIELD_ID}"],
         max_records=1,
         use_field_ids=True,
     )
